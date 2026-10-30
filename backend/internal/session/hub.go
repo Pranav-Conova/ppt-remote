@@ -48,12 +48,18 @@ type Session struct {
 	mu      sync.Mutex
 	peers   map[Role]*Peer
 	expires time.Time
+	ended   bool
+	// grace ends the session if the presenter stays away too long.
+	grace *time.Timer
 }
 
 type Hub struct {
 	TTL         time.Duration
 	MaxSessions int
-	Now         func() time.Time
+	// PresenterGrace is how long a session survives after the presenter
+	// disconnects without ending it (crash, network loss). 0 = until TTL.
+	PresenterGrace time.Duration
+	Now            func() time.Time
 
 	mu       sync.Mutex
 	sessions map[string]*Session
@@ -61,10 +67,11 @@ type Hub struct {
 
 func NewHub(ttl time.Duration, maxSessions int) *Hub {
 	return &Hub{
-		TTL:         ttl,
-		MaxSessions: maxSessions,
-		Now:         time.Now,
-		sessions:    make(map[string]*Session),
+		TTL:            ttl,
+		MaxSessions:    maxSessions,
+		PresenterGrace: 90 * time.Second,
+		Now:            time.Now,
+		sessions:       make(map[string]*Session),
 	}
 }
 
@@ -134,6 +141,15 @@ func (h *Hub) Len() int {
 // already present and notifies the other side that p joined.
 func (h *Hub) Attach(s *Session, role Role, p *Peer) {
 	s.mu.Lock()
+	if s.ended {
+		s.mu.Unlock()
+		p.CloseWith(CodeNotFound, "session ended")
+		return
+	}
+	if role == Presenter && s.grace != nil {
+		s.grace.Stop()
+		s.grace = nil
+	}
 	old := s.peers[role]
 	s.peers[role] = p
 	other := s.peers[role.Other()]
@@ -161,10 +177,54 @@ func (h *Hub) Detach(s *Session, role Role, p *Peer) {
 	delete(s.peers, role)
 	other := s.peers[role.Other()]
 	s.expires = h.Now().Add(h.TTL)
+	if role == Presenter && h.PresenterGrace > 0 {
+		if s.grace != nil {
+			s.grace.Stop()
+		}
+		s.grace = time.AfterFunc(h.PresenterGrace, func() { h.endIfPresenterAway(s) })
+	}
 	s.mu.Unlock()
 
 	if other != nil {
 		other.SendText([]byte(`{"t":"peer-left"}`))
+	}
+}
+
+// End finishes the session for good: the remote is told and disconnected
+// with CodeEnded, and later connection attempts get CodeNotFound.
+func (h *Hub) End(s *Session) {
+	h.mu.Lock()
+	delete(h.sessions, s.ID)
+	h.mu.Unlock()
+
+	s.mu.Lock()
+	if s.ended {
+		s.mu.Unlock()
+		return
+	}
+	s.ended = true
+	if s.grace != nil {
+		s.grace.Stop()
+		s.grace = nil
+	}
+	peers := s.peers
+	s.peers = make(map[Role]*Peer)
+	s.mu.Unlock()
+
+	for role, p := range peers {
+		if role == Remote {
+			p.SendText([]byte(`{"t":"ended"}`))
+		}
+		p.CloseWith(CodeEnded, "presentation ended")
+	}
+}
+
+func (h *Hub) endIfPresenterAway(s *Session) {
+	s.mu.Lock()
+	away := s.peers[Presenter] == nil && !s.ended
+	s.mu.Unlock()
+	if away {
+		h.End(s)
 	}
 }
 

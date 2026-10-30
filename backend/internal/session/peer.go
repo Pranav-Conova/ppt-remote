@@ -19,7 +19,26 @@ type Peer struct {
 	wake    chan struct{}
 	done    chan struct{}
 	once    sync.Once
+	reason  CloseReason
 }
+
+// CloseReason is the WebSocket close code and text sent when a peer is closed.
+type CloseReason struct {
+	Code int
+	Text string
+}
+
+// Close codes the browser client acts on (4000-4999 are application-defined).
+const (
+	// CodeEnded: the presenter ended the session; the remote should stop.
+	CodeEnded = 4000
+	// CodeNotFound: the session does not exist (any more).
+	CodeNotFound = 4404
+	// CodeUnauthorized: the token does not match.
+	CodeUnauthorized = 4401
+	// CodeReplaced: another connection took over this role, or the peer was too slow.
+	CodeReplaced = 1008
+)
 
 func NewPeer() *Peer {
 	return &Peer{
@@ -72,4 +91,16 @@ func (p *Peer) TakePointer() []byte {
 // Done is closed once the peer has been closed.
 func (p *Peer) Done() <-chan struct{} { return p.done }
 
-func (p *Peer) Close() { p.once.Do(func() { close(p.done) }) }
+// Close closes the peer as replaced or too slow.
+func (p *Peer) Close() { p.CloseWith(CodeReplaced, "replaced or too slow") }
+
+// CloseWith closes the peer; the connection is closed with code and text.
+func (p *Peer) CloseWith(code int, text string) {
+	p.once.Do(func() {
+		p.reason = CloseReason{code, text}
+		close(p.done)
+	})
+}
+
+// Reason is valid once Done is closed.
+func (p *Peer) Reason() CloseReason { return p.reason }

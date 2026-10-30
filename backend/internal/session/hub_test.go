@@ -151,3 +151,65 @@ func TestSlowPeerIsClosedWhenQueueFull(t *testing.T) {
 		t.Fatal("peer should be closed after overflow")
 	}
 }
+
+func TestEndNotifiesRemoteAndDeletesSession(t *testing.T) {
+	h := NewHub(time.Hour, 0)
+	c, _ := h.Create()
+	s, _ := h.Authenticate(c.ID, Presenter, c.PresenterToken)
+	pres, rem := NewPeer(), NewPeer()
+	h.Attach(s, Presenter, pres)
+	h.Attach(s, Remote, rem)
+	recv(t, rem) // welcome
+
+	h.End(s)
+	if got := recv(t, rem); got != `{"t":"ended"}` {
+		t.Fatalf("remote should be told: %s", got)
+	}
+	<-rem.Done()
+	if r := rem.Reason(); r.Code != CodeEnded {
+		t.Fatalf("remote close code %d", r.Code)
+	}
+	if _, err := h.Authenticate(c.ID, Remote, c.RemoteToken); err != ErrNotFound {
+		t.Fatalf("session should be gone, got %v", err)
+	}
+	// A connection that authenticated just before End is turned away.
+	late := NewPeer()
+	h.Attach(s, Remote, late)
+	<-late.Done()
+	if late.Reason().Code != CodeNotFound {
+		t.Fatalf("late attach code %d", late.Reason().Code)
+	}
+}
+
+func TestPresenterGrace(t *testing.T) {
+	h := NewHub(time.Hour, 0)
+	h.PresenterGrace = 30 * time.Millisecond
+
+	// Presenter comes back in time: the session survives.
+	c, _ := h.Create()
+	s, _ := h.Authenticate(c.ID, Presenter, c.PresenterToken)
+	p1 := NewPeer()
+	h.Attach(s, Presenter, p1)
+	h.Detach(s, Presenter, p1)
+	h.Attach(s, Presenter, NewPeer())
+	time.Sleep(80 * time.Millisecond)
+	if h.Len() != 1 {
+		t.Fatal("session ended although the presenter returned")
+	}
+
+	// Presenter stays away: the session ends and the remote is closed.
+	c2, _ := h.Create()
+	s2, _ := h.Authenticate(c2.ID, Presenter, c2.PresenterToken)
+	p2, rem := NewPeer(), NewPeer()
+	h.Attach(s2, Presenter, p2)
+	h.Attach(s2, Remote, rem)
+	h.Detach(s2, Presenter, p2)
+	select {
+	case <-rem.Done():
+	case <-time.After(time.Second):
+		t.Fatal("remote not closed after the grace period")
+	}
+	if rem.Reason().Code != CodeEnded || h.Len() != 1 {
+		t.Fatalf("code %d, sessions %d", rem.Reason().Code, h.Len())
+	}
+}

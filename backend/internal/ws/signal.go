@@ -29,18 +29,21 @@ type Handler struct {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	role := session.Role(q.Get("role"))
-	s, err := h.Hub.Authenticate(q.Get("session"), role, q.Get("token"))
-	switch {
-	case errors.Is(err, session.ErrNotFound):
-		http.Error(w, "session not found", http.StatusNotFound)
-		return
-	case err != nil:
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
+	s, authErr := h.Hub.Authenticate(q.Get("session"), role, q.Get("token"))
 
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: h.OriginPatterns})
 	if err != nil {
+		return
+	}
+	// Rejections are sent as close codes rather than HTTP errors: browsers
+	// hide the HTTP status of a failed upgrade, and the client needs to know
+	// the session is gone (stop retrying) rather than the network being down.
+	switch {
+	case errors.Is(authErr, session.ErrNotFound):
+		conn.Close(session.CodeNotFound, "session not found")
+		return
+	case authErr != nil:
+		conn.Close(session.CodeUnauthorized, "unauthorized")
 		return
 	}
 	conn.SetReadLimit(readLimit)
@@ -61,7 +64,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for {
 		typ, msg, err := conn.Read(ctx)
 		if err != nil {
-			if websocket.CloseStatus(err) == -1 && ctx.Err() == nil {
+			code := websocket.CloseStatus(err)
+			if code == session.CodeEnded && role == session.Presenter {
+				// The presenter closed its tab: stop the phone too.
+				h.Hub.End(s)
+			} else if code == -1 && ctx.Err() == nil {
 				slog.Debug("ws read", "err", err)
 			}
 			conn.CloseNow()
@@ -92,7 +99,19 @@ func writeLoop(ctx context.Context, conn *websocket.Conn, p *session.Peer) {
 		case <-ctx.Done():
 			return
 		case <-p.Done():
-			conn.Close(websocket.StatusPolicyViolation, "replaced or too slow")
+			// Deliver anything already queued (e.g. "ended") before closing.
+			for drained := false; !drained; {
+				select {
+				case msg := <-p.Text():
+					if !write(websocket.MessageText, msg) {
+						return
+					}
+				default:
+					drained = true
+				}
+			}
+			r := p.Reason()
+			conn.Close(websocket.StatusCode(r.Code), r.Text)
 			return
 		case msg := <-p.Text():
 			if !write(websocket.MessageText, msg) {
