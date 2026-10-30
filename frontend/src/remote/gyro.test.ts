@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { yawPitch } from "./gyro";
+import { tighten, yawPitch } from "./gyro";
 
 // rotationRate as browsers report it: alpha = about X, beta = about Y, gamma = about Z.
 describe("yawPitch (player space)", () => {
@@ -43,5 +43,28 @@ describe("yawPitch (player space)", () => {
     // Flat phone rolled about its long (Y) axis: not a turn, so it's reduced.
     const { yaw } = yawPitch(0, 30, 0, [0, 0.05, 1]);
     expect(Math.abs(yaw)).toBeLessThan(4);
+  });
+});
+
+describe("tighten", () => {
+  it("leaves movement at or above the threshold untouched", () => {
+    expect(tighten(10, 0, 4)).toEqual([10, 0]);
+    expect(tighten(3, 4, 4)).toEqual([3, 4]); // speed 5
+  });
+
+  it("scales slow movement down proportionally instead of dropping it", () => {
+    const [y, p] = tighten(2, 0, 4); // half the threshold → half the speed again
+    expect(y).toBeCloseTo(1);
+    expect(p).toBe(0);
+    // Slow but deliberate motion still moves (a hard 0.4 cut-off would also
+    // pass this, but one at 4 would not).
+    expect(tighten(3, 0, 4)[0]).toBeGreaterThan(2);
+  });
+
+  it("shrinks tremor-sized noise to near zero and keeps direction", () => {
+    const [y, p] = tighten(0.3, -0.4, 4); // speed 0.5
+    expect(Math.hypot(y, p)).toBeCloseTo(0.0625);
+    expect(Math.sign(y)).toBe(1);
+    expect(Math.sign(p)).toBe(-1);
   });
 });

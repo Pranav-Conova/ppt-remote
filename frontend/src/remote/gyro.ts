@@ -44,8 +44,24 @@ export function saveGyroSettings(s: GyroSettings) {
 }
 
 const SLIDE_ASPECT = 16 / 9;
-/** Rotation below this (deg/s) is treated as sensor noise. */
-const DEADZONE = 0.4;
+/**
+ * Below this rotation speed (deg/s), input is scaled down proportionally
+ * ("tightening") rather than cut off, so slow deliberate aiming still works
+ * while tremor and sensor noise shrink to almost nothing.
+ */
+export const TIGHTEN_THRESHOLD = 4;
+
+/**
+ * Tightening (Jibb Smart, "Good gyro controls part 1"): scale the rotation
+ * by speed/threshold when it is slower than the threshold. A hard minimum
+ * speed would swallow slow, intentional movement entirely.
+ */
+export function tighten(yaw: number, pitch: number, threshold = TIGHTEN_THRESHOLD): [number, number] {
+  const speed = Math.hypot(yaw, pitch);
+  if (threshold <= 0 || speed >= threshold) return [yaw, pitch];
+  const scale = speed / threshold;
+  return [yaw * scale, pitch * scale];
+}
 
 type PermissionFn = () => Promise<"granted" | "denied">;
 
@@ -184,9 +200,8 @@ export class GyroPointer {
     this.lastT = t;
     if (dt === 0) return;
 
-    let { yaw, pitch } = yawPitch(r.alpha, r.beta, r.gamma, this.up);
-    if (Math.abs(yaw) < DEADZONE) yaw = 0;
-    if (Math.abs(pitch) < DEADZONE) pitch = 0;
+    const turn = yawPitch(r.alpha, r.beta, r.gamma, this.up);
+    const [yaw, pitch] = tighten(turn.yaw, turn.pitch);
 
     const { degreesPerWidth, invertX, invertY } = this.settings;
     const degreesPerHeight = degreesPerWidth / SLIDE_ASPECT;
