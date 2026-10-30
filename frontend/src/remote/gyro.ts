@@ -2,9 +2,9 @@
 //
 // We integrate angular velocity (devicemotion.rotationRate) rather than
 // reading absolute orientation. Absolute alpha relies on the magnetometer,
-// which drifts and jumps indoors. Yaw is measured around the gravity vector,
-// so it works however steeply the phone is tilted while being held like a
-// remote. The pointer starts at the centre each time the button is pressed
+// which drifts and jumps indoors. Turning is measured in "player space" (see
+// yawPitch), so it works however the phone is held. The pointer starts at
+// the centre each time the button is pressed
 // (clutch), so there is no long-term drift to calibrate away.
 import { OneEuroFilter } from "./oneEuro";
 
@@ -50,23 +50,36 @@ const DEADZONE = 0.4;
 type PermissionFn = () => Promise<"granted" | "denied">;
 
 /**
- * Splits angular velocity into turning (yaw) and tilting (pitch), in deg/s.
+ * How far (as a multiplier) a turn may stray from the gravity-based yaw axis
+ * before it is reduced. 2 ≈ a 60° buffer, the value JoyShockMapper uses.
+ */
+const YAW_RELAX = 2;
+
+/**
+ * Splits angular velocity into turning (yaw) and tilting (pitch), in deg/s,
+ * using "player space" (Jibb Smart, http://gyrowiki.jibbsmart.com/blog:player-space-gyro-and-alternatives-explained).
  *
  * Careful: DeviceMotionEvent.rotationRate is NOT named like
- * DeviceOrientationEvent. Per the W3C spec, rotationRate.alpha is the rate
+ * DeviceOrientationEvent. Browsers report rotationRate.alpha as the rate
  * about the device X axis, beta about Y and gamma about Z (x: right, y: top
- * of the screen, z: out of the screen). Chrome and Safari both follow this.
+ * of the screen, z: out of the screen).
+ *
+ * Yaw: the phone's own turning axes (Y and Z: Z when held flat, Y when held
+ * upright) give the speed. Gravity only decides the direction, so an error
+ * in the gravity estimate (e.g. from hand acceleration) can't skew the aim
+ * the way projecting onto gravity ("world space") does. Turns far from the
+ * gravity axis fade out smoothly instead of flipping.
+ * Pitch: rotation about the phone's own X axis (tilting the top up/down).
  *
  * @param up Gravity "up" direction in device coordinates (any length).
  */
 export function yawPitch(alpha: number, beta: number, gamma: number, up: readonly [number, number, number]) {
   const [ux, uy, uz] = up;
   const len = Math.hypot(ux, uy, uz) || 1;
-  // Yaw: rotation about the world-vertical axis, whatever the holding angle.
-  const yaw = (alpha * ux + beta * uy + gamma * uz) / len;
-  // Pitch: tilting the top of the phone up/down, i.e. rotation about X.
-  const pitch = alpha;
-  return { yaw, pitch };
+  const worldYaw = (beta * uy + gamma * uz) / len;
+  const turn = Math.hypot(beta, gamma);
+  const yaw = Math.sign(worldYaw) * Math.min(Math.abs(worldYaw) * YAW_RELAX, turn);
+  return { yaw, pitch: alpha };
 }
 
 export function motionSupported(): boolean {

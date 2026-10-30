@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { yawPitch } from "./gyro";
 
-// rotationRate per the W3C spec: alpha = about X, beta = about Y, gamma = about Z.
-describe("yawPitch", () => {
+// rotationRate as browsers report it: alpha = about X, beta = about Y, gamma = about Z.
+describe("yawPitch (player space)", () => {
   it("phone flat, top pointing at the screen: turning sideways is yaw, not pitch", () => {
     const up = [0, 0, 1] as const; // screen facing the ceiling
     // Turning left/right rotates about Z (gamma).
@@ -17,11 +17,31 @@ describe("yawPitch", () => {
     expect(yawPitch(15, 0, 0, up)).toEqual({ yaw: 0, pitch: 15 });
   });
 
-  it("phone held at 45° like a remote: yaw combines Y and Z rates", () => {
+  it("phone held at 45° like a remote: a turn about vertical keeps its full speed", () => {
     const up = [0, Math.SQRT1_2, Math.SQRT1_2] as const;
-    // A pure turn about world vertical shows up equally on Y and Z.
     const { yaw, pitch } = yawPitch(0, 10 * Math.SQRT1_2, 10 * Math.SQRT1_2, up);
     expect(yaw).toBeCloseTo(10);
     expect(pitch).toBe(0);
+  });
+
+  it("is not skewed by a wrong gravity estimate (unlike world space)", () => {
+    // Phone flat and turning at 30°/s, but gravity is estimated 20° off
+    // (e.g. the hand was accelerating). World space would give 30·cos20° ≈ 28.2.
+    const off = (20 * Math.PI) / 180;
+    const { yaw } = yawPitch(0, 0, 30, [0, Math.sin(off), Math.cos(off)]);
+    expect(yaw).toBeCloseTo(30);
+  });
+
+  it("uses the axis the user actually turns with, flat or upright", () => {
+    // Held flat but the user twists about Y (a common wrist motion):
+    // within the 60° buffer it still counts as turning.
+    const tilted = [0, 0.5, Math.sqrt(0.75)] as const; // phone tilted up 30°
+    expect(Math.abs(yawPitch(0, 20, 0, tilted).yaw)).toBeCloseTo(20);
+  });
+
+  it("fades out rotations far from the turning axis instead of flipping", () => {
+    // Flat phone rolled about its long (Y) axis: not a turn, so it's reduced.
+    const { yaw } = yawPitch(0, 30, 0, [0, 0.05, 1]);
+    expect(Math.abs(yaw)).toBeLessThan(4);
   });
 });
