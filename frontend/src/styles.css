@@ -1473,6 +1473,10 @@ kbd {
   display: flex;
   justify-content: space-between;
 }
+.range-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
 .range output {
   font-family: var(--font-mono);
   color: var(--amber);

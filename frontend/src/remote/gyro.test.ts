@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tighten, yawPitch } from "./gyro";
+import { ACCEL_FAST, ACCEL_SLOW, accelerationGain, tighten, yawPitch } from "./gyro";
 
 // rotationRate as browsers report it: alpha = about X, beta = about Y, gamma = about Z.
 describe("yawPitch (player space)", () => {
@@ -66,5 +66,27 @@ describe("tighten", () => {
     expect(Math.hypot(y, p)).toBeCloseTo(0.0625);
     expect(Math.sign(y)).toBe(1);
     expect(Math.sign(p)).toBe(-1);
+  });
+});
+
+describe("accelerationGain", () => {
+  it("is constant when acceleration is off", () => {
+    for (const s of [0, 10, 40, 200]) expect(accelerationGain(s, 0)).toBe(1);
+  });
+
+  it("is lower for slow moves and higher for fast moves", () => {
+    expect(accelerationGain(ACCEL_SLOW - 1, 0.5)).toBeCloseTo(0.75);
+    expect(accelerationGain(ACCEL_FAST + 50, 0.5)).toBeCloseTo(1.5);
+    expect(accelerationGain(ACCEL_SLOW - 1, 1)).toBeCloseTo(0.5);
+    expect(accelerationGain(ACCEL_FAST + 50, 1)).toBeCloseTo(2);
+  });
+
+  it("blends smoothly and never decreases with speed", () => {
+    let prev = 0;
+    for (let s = 0; s <= 120; s += 5) {
+      const g = accelerationGain(s, 0.7);
+      expect(g).toBeGreaterThanOrEqual(prev);
+      prev = g;
+    }
   });
 });

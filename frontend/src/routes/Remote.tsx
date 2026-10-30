@@ -244,6 +244,23 @@ export default function Remote() {
           </label>
           <label className="range">
             <span className="range-head">
+              Acceleration <output>{Math.round(gyroSettings.acceleration * 100)}%</output>
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={gyroSettings.acceleration}
+              aria-describedby="accel-hint"
+              onChange={(e) => setGyroSettings({ ...gyroSettings, acceleration: Number(e.target.value) })}
+            />
+            <span className="range-hint" id="accel-hint">
+              Higher = steadier small moves, faster big sweeps
+            </span>
+          </label>
+          <label className="range">
+            <span className="range-head">
               Smoothing <output>{Math.round(gyroSettings.smoothing * 100)}%</output>
             </span>
             <input

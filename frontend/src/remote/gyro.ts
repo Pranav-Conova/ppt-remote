@@ -11,6 +11,11 @@ import { OneEuroFilter } from "./oneEuro";
 export interface GyroSettings {
   /** Degrees of rotation needed to sweep the full slide width. */
   degreesPerWidth: number;
+  /**
+   * Pointer acceleration, 0..1. 0 = constant speed. Higher = slower, more
+   * precise small movements and faster big sweeps.
+   */
+  acceleration: number;
   /** 0 (raw) .. 1 (very smooth) */
   smoothing: number;
   invertX: boolean;
@@ -19,6 +24,7 @@ export interface GyroSettings {
 
 export const DEFAULT_GYRO: GyroSettings = {
   degreesPerWidth: 35,
+  acceleration: 0.5,
   smoothing: 0.5,
   invertX: false,
   invertY: false,
@@ -50,6 +56,28 @@ const SLIDE_ASPECT = 16 / 9;
  * while tremor and sensor noise shrink to almost nothing.
  */
 export const TIGHTEN_THRESHOLD = 4;
+
+/** Rotation speeds (deg/s) where acceleration starts and reaches full effect. */
+export const ACCEL_SLOW = 5;
+export const ACCEL_FAST = 75;
+
+/**
+ * Pointer acceleration (Jibb Smart, "Good gyro controls part 1"; Casiez &
+ * Roussel found OS-style acceleration up to 24% faster than constant gain).
+ * Returns a sensitivity multiplier that blends from a "slow" gain below
+ * ACCEL_SLOW to a "fast" gain above ACCEL_FAST, based on rotation speed.
+ *
+ * acceleration 0   → 1× always (constant gain)
+ * acceleration 0.5 → 0.75× slow … 1.5× fast
+ * acceleration 1   → 0.5× slow … 2× fast
+ */
+export function accelerationGain(speed: number, acceleration: number): number {
+  const a = Math.min(1, Math.max(0, acceleration));
+  const slow = 1 - 0.5 * a;
+  const fast = 1 + a;
+  const t = Math.min(1, Math.max(0, (speed - ACCEL_SLOW) / (ACCEL_FAST - ACCEL_SLOW)));
+  return slow + (fast - slow) * t;
+}
 
 /**
  * Tightening (Jibb Smart, "Good gyro controls part 1"): scale the rotation
@@ -203,12 +231,13 @@ export class GyroPointer {
     const turn = yawPitch(r.alpha, r.beta, r.gamma, this.up);
     const [yaw, pitch] = tighten(turn.yaw, turn.pitch);
 
-    const { degreesPerWidth, invertX, invertY } = this.settings;
+    const { degreesPerWidth, acceleration, invertX, invertY } = this.settings;
+    const gain = accelerationGain(Math.hypot(turn.yaw, turn.pitch), acceleration);
     const degreesPerHeight = degreesPerWidth / SLIDE_ASPECT;
     // Turning left (positive yaw about "up") moves the pointer left; tilting
     // the top up (positive pitch) moves it up.
-    this.x += ((invertX ? 1 : -1) * yaw * dt) / degreesPerWidth;
-    this.y += ((invertY ? 1 : -1) * pitch * dt) / degreesPerHeight;
+    this.x += ((invertX ? 1 : -1) * yaw * gain * dt) / degreesPerWidth;
+    this.y += ((invertY ? 1 : -1) * pitch * gain * dt) / degreesPerHeight;
     this.x = Math.min(1, Math.max(0, this.x));
     this.y = Math.min(1, Math.max(0, this.y));
 
