@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACCEL_FAST, ACCEL_SLOW, accelerationGain, tighten, yawPitch } from "./gyro";
+import { ACCEL_FAST, ACCEL_SLOW, GyroCalibrator, STILL_WINDOW, accelerationGain, tighten, yawPitch } from "./gyro";
 
 // rotationRate as browsers report it: alpha = about X, beta = about Y, gamma = about Z.
 describe("yawPitch (player space)", () => {
@@ -88,5 +88,44 @@ describe("accelerationGain", () => {
       expect(g).toBeGreaterThanOrEqual(prev);
       prev = g;
     }
+  });
+});
+
+describe("GyroCalibrator", () => {
+  // Deterministic pseudo-noise in [-amp, amp].
+  const noise = (i: number, amp: number) => amp * Math.sin(i * 12.9898 + 78.233) * Math.cos(i * 4.1414);
+
+  it("learns a constant bias while still and removes it", () => {
+    const c = new GyroCalibrator();
+    let out: number[] = [];
+    for (let i = 0; i < 400; i++) out = c.push(0.1 + noise(i, 0.1), 0.8 + noise(i + 7, 0.1), -0.3 + noise(i + 3, 0.1), true);
+    expect(c.bias[1]).toBeCloseTo(0.8, 1);
+    expect(c.bias[2]).toBeCloseTo(-0.3, 1);
+    expect(Math.abs(out[1])).toBeLessThan(0.25);
+  });
+
+  it("does not absorb slow deliberate movement as bias", () => {
+    const c = new GyroCalibrator();
+    for (let i = 0; i < 400; i++) c.push(0, 3 + noise(i, 0.1), 0, true); // steady 3°/s turn
+    expect(Math.abs(c.bias[1])).toBeLessThan(0.05);
+    expect(c.steady).toBe(false); // consistent direction = real motion
+  });
+
+  it("leaves data untouched when auto-calibration is off", () => {
+    const c = new GyroCalibrator();
+    let out: number[] = [];
+    for (let i = 0; i < 200; i++) out = c.push(0, 0.8, 0, false);
+    expect(c.bias).toEqual([0, 0, 0]);
+    expect(out).toEqual([0, 0.8, 0]);
+  });
+
+  it("calls tremor 'steady' but not real movement", () => {
+    const tremor = new GyroCalibrator();
+    for (let i = 0; i < STILL_WINDOW * 2; i++) tremor.push(noise(i, 1.2), noise(i + 5, 1.2), noise(i + 9, 1.2), true);
+    expect(tremor.steady).toBe(true);
+
+    const moving = new GyroCalibrator();
+    for (let i = 0; i < STILL_WINDOW * 2; i++) moving.push(0, 0, 25 + noise(i, 2), true);
+    expect(moving.steady).toBe(false);
   });
 });

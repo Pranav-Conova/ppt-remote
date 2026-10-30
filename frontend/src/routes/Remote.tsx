@@ -272,6 +272,13 @@ export default function Remote() {
               onChange={(e) => setGyroSettings({ ...gyroSettings, smoothing: Number(e.target.value) })}
             />
           </label>
+          <Switch
+            checked={gyroSettings.autoCalibrate}
+            onChange={(v) => setGyroSettings({ ...gyroSettings, autoCalibrate: v })}
+            hint="Stops the dot sliding when you hold still"
+          >
+            Automatic drift correction
+          </Switch>
           <Switch checked={gyroSettings.invertX} onChange={(v) => setGyroSettings({ ...gyroSettings, invertX: v })}>
             Invert left/right
           </Switch>

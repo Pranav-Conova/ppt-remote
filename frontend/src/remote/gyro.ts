@@ -18,6 +18,8 @@ export interface GyroSettings {
   acceleration: number;
   /** 0 (raw) .. 1 (very smooth) */
   smoothing: number;
+  /** Learn and remove gyro bias (drift) whenever the phone is still. */
+  autoCalibrate: boolean;
   invertX: boolean;
   invertY: boolean;
 }
@@ -26,6 +28,7 @@ export const DEFAULT_GYRO: GyroSettings = {
   degreesPerWidth: 35,
   acceleration: 0.5,
   smoothing: 0.5,
+  autoCalibrate: true,
   invertX: false,
   invertY: false,
 };
@@ -56,6 +59,63 @@ const SLIDE_ASPECT = 16 / 9;
  * while tremor and sensor noise shrink to almost nothing.
  */
 export const TIGHTEN_THRESHOLD = 4;
+
+// ---- drift correction & steady state ------------------------------------
+/** Samples per stillness window (~0.5 s at 60 Hz). */
+export const STILL_WINDOW = 30;
+/** Bias is only learned when every axis varies less than this (deg/s). */
+const CALIBRATE_MAX_STD = 0.5;
+/** ...and the average rate is small enough to plausibly be bias, not motion. */
+const CALIBRATE_MAX_MEAN = 1.5;
+/** "Steady" = held but not moving: jitter without a consistent direction. */
+const STEADY_MAX_STD = 1.5;
+const STEADY_MAX_MEAN = 0.75;
+/** How fast the bias estimate follows (per still sample; ~1 s time constant). */
+const BIAS_RATE = 0.02;
+
+/**
+ * Tracks gyro bias and stillness over a sliding window.
+ *
+ * Bias calibration: the standard approach is to average the gyro output
+ * while the device is still and subtract it (mobile sensor-calibration
+ * patents; Jibb Smart's calibration guidance). Android and iOS usually
+ * correct most bias already, so this mainly removes what's left.
+ *
+ * Steady state: commercial air mice treat "held but not moving" as its own
+ * state and freeze the cursor there, so hand tremor (8-12 Hz) doesn't make
+ * it shimmer. Tremor has near-zero mean, while slow deliberate motion has a
+ * consistent direction, so the mean tells the two apart.
+ */
+export class GyroCalibrator {
+  bias: [number, number, number] = [0, 0, 0];
+  /** Held but not deliberately moving. */
+  steady = false;
+  private buf: [number, number, number][] = [];
+  private i = 0;
+
+  /** Feeds one raw sample; returns it with the current bias removed. */
+  push(a: number, b: number, g: number, autoCalibrate: boolean): [number, number, number] {
+    const sample: [number, number, number] = [a, b, g];
+    if (this.buf.length < STILL_WINDOW) this.buf.push(sample);
+    else this.buf[this.i] = sample;
+    this.i = (this.i + 1) % STILL_WINDOW;
+
+    if (this.buf.length === STILL_WINDOW) {
+      const n = STILL_WINDOW;
+      const mean = [0, 1, 2].map((k) => this.buf.reduce((s, v) => s + v[k], 0) / n);
+      const std = [0, 1, 2].map((k) => Math.sqrt(this.buf.reduce((s, v) => s + (v[k] - mean[k]) ** 2, 0) / n));
+      const maxStd = Math.max(...std);
+      const residual = Math.hypot(mean[0] - this.bias[0], mean[1] - this.bias[1], mean[2] - this.bias[2]);
+
+      if (autoCalibrate && maxStd < CALIBRATE_MAX_STD && Math.max(...mean.map(Math.abs)) < CALIBRATE_MAX_MEAN) {
+        for (let k = 0; k < 3; k++) this.bias[k] += BIAS_RATE * (mean[k] - this.bias[k]);
+      }
+      this.steady = maxStd < STEADY_MAX_STD && residual < STEADY_MAX_MEAN;
+    }
+    if (!autoCalibrate) return sample;
+    return [a - this.bias[0], b - this.bias[1], g - this.bias[2]];
+  }
+}
 
 /** Rotation speeds (deg/s) where acceleration starts and reaches full effect. */
 export const ACCEL_SLOW = 5;
@@ -158,6 +218,7 @@ export class GyroPointer {
   private fx = new OneEuroFilter();
   private fy = new OneEuroFilter();
   private up: [number, number, number] = [0, 0.7, 0.7];
+  private calibrator = new GyroCalibrator();
   private active = false;
 
   constructor(settings: GyroSettings) {
@@ -221,6 +282,9 @@ export class GyroPointer {
     const r = e.rotationRate;
     if (!r || r.alpha == null || r.beta == null || r.gamma == null) return;
     this.hasData = true;
+    // Runs even while the pointer is off, so bias is learned while the
+    // phone rests between uses.
+    const [ra, rb, rg] = this.calibrator.push(r.alpha, r.beta, r.gamma, this.settings.autoCalibrate);
     if (!this.active) return;
 
     const t = e.timeStamp;
@@ -228,8 +292,10 @@ export class GyroPointer {
     this.lastT = t;
     if (dt === 0) return;
 
-    const turn = yawPitch(r.alpha, r.beta, r.gamma, this.up);
-    const [yaw, pitch] = tighten(turn.yaw, turn.pitch);
+    const turn = yawPitch(ra, rb, rg, this.up);
+    let [yaw, pitch] = tighten(turn.yaw, turn.pitch);
+    // Held steady (tremor only): keep the dot perfectly still.
+    if (this.calibrator.steady && Math.hypot(turn.yaw, turn.pitch) < TIGHTEN_THRESHOLD) yaw = pitch = 0;
 
     const { degreesPerWidth, acceleration, invertX, invertY } = this.settings;
     const gain = accelerationGain(Math.hypot(turn.yaw, turn.pitch), acceleration);
