@@ -24,6 +24,25 @@ export const DEFAULT_GYRO: GyroSettings = {
   invertY: false,
 };
 
+// v2: v1 builds mapped the gyro axes wrong, so saved invert toggles are stale.
+const GYRO_STORAGE_KEY = "signify.gyro.v2";
+
+export function loadGyroSettings(): GyroSettings {
+  try {
+    return { ...DEFAULT_GYRO, ...JSON.parse(localStorage.getItem(GYRO_STORAGE_KEY) ?? "{}") };
+  } catch {
+    return DEFAULT_GYRO;
+  }
+}
+
+export function saveGyroSettings(s: GyroSettings) {
+  try {
+    localStorage.setItem(GYRO_STORAGE_KEY, JSON.stringify(s));
+  } catch {
+    // ignore (private mode etc.)
+  }
+}
+
 const SLIDE_ASPECT = 16 / 9;
 /** Rotation below this (deg/s) is treated as sensor noise. */
 const DEADZONE = 0.4;

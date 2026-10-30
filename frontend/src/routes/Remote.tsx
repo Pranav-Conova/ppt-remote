@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eraser,
+  FlaskConical,
   MonitorOff,
   MousePointer2,
   PenLine,
@@ -18,16 +19,15 @@ import { Link, fetchConfig, type LinkStatus } from "../link/link";
 import { FLAG_DRAW, FLAG_VISIBLE, encodePointer, type RemoteAction } from "../link/protocol";
 import { StatusBadge } from "../link/StatusBadge";
 import {
-  DEFAULT_GYRO,
   GyroPointer,
+  loadGyroSettings,
+  saveGyroSettings,
   motionNeedsPermission,
   motionSupported,
   requestMotionPermission,
   type GyroSettings,
 } from "../remote/gyro";
 
-// v2: v1 builds mapped the gyro axes wrong, so saved invert toggles are stale.
-const GYRO_KEY = "signify.gyro.v2";
 /** Pressing Pointer/Draw again within this window continues from the last spot instead of re-centring. */
 const CONTINUE_MS = 1500;
 /** Touchpad fallback: slide widths moved per pixel dragged. */
@@ -35,14 +35,6 @@ const TOUCHPAD_GAIN = 1 / 350;
 
 type Motion = "unknown" | "granted" | "denied" | "unsupported";
 type HoldMode = "pointer" | "draw";
-
-function loadGyro(): GyroSettings {
-  try {
-    return { ...DEFAULT_GYRO, ...JSON.parse(localStorage.getItem(GYRO_KEY) ?? "{}") };
-  } catch {
-    return DEFAULT_GYRO;
-  }
-}
 
 function buzz(ms = 10) {
   navigator.vibrate?.(ms);
@@ -56,7 +48,7 @@ export default function Remote() {
   const [motion, setMotion] = useState<Motion>(() =>
     !motionSupported() ? "unsupported" : motionNeedsPermission() ? "unknown" : "granted",
   );
-  const [gyroSettings, setGyroSettings] = useState<GyroSettings>(loadGyro);
+  const [gyroSettings, setGyroSettings] = useState<GyroSettings>(loadGyroSettings);
   const [showSettings, setShowSettings] = useState(false);
   const [holding, setHolding] = useState<HoldMode | null>(null);
 
@@ -96,7 +88,7 @@ export default function Remote() {
   };
 
   useEffect(() => {
-    const g = new GyroPointer(loadGyro());
+    const g = new GyroPointer(loadGyroSettings());
     g.onMove = sendPointer;
     gyro.current = g;
     return () => g.dispose();
@@ -104,11 +96,7 @@ export default function Remote() {
 
   useEffect(() => {
     gyro.current?.update(gyroSettings);
-    try {
-      localStorage.setItem(GYRO_KEY, JSON.stringify(gyroSettings));
-    } catch {
-      // ignore
-    }
+    saveGyroSettings(gyroSettings);
   }, [gyroSettings]);
 
   // Keep the screen awake while the remote is open.
@@ -273,6 +261,10 @@ export default function Remote() {
           <Switch checked={gyroSettings.invertY} onChange={(v) => setGyroSettings({ ...gyroSettings, invertY: v })}>
             Invert up/down
           </Switch>
+          <a className="lab-link" href="/lab" target="_blank" rel="noreferrer">
+            <FlaskConical size={16} aria-hidden="true" />
+            Pointer not right? Record motion data in the Pointer Lab
+          </a>
         </section>
       )}
 

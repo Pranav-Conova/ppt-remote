@@ -214,6 +214,7 @@ All settings are optional environment variables; see [`.env.example`](.env.examp
 | `ICE_SERVERS` | Google STUN | JSON array of `RTCIceServer`. Add a TURN server for strict networks. |
 | `ALLOWED_ORIGINS` | *(same-origin only)* | Extra WebSocket origins (glob patterns, comma-separated) |
 | `SOFFICE_PATH` | *(auto-detected)* | Path to LibreOffice's `soffice` binary |
+| `RECORDINGS_DIR` | *(system temp dir)* | Where Pointer Lab recordings are stored (keeps the newest 500) |
 
 ## ☁️ Deployment
 
@@ -271,6 +272,24 @@ Signify/
 cd backend  && go test ./...   # pairing, auth, TTL, relay coalescing, WebSocket end-to-end
 cd frontend && npm test        # pointer protocol, One Euro filter, finger + gesture logic
 ```
+
+## 🔬 Pointer Lab (tuning the gyro pointer)
+
+If the laser pointer doesn't feel right on a particular phone, record real sensor data instead of guessing:
+
+1. On the phone, open `/lab` (or tap **⚙ → Pointer Lab** on the remote).
+2. Follow the guided moves (about 1 minute): hold still, turn right/left, tilt up/down, circle, quick flicks, free pointing.
+3. Tick what felt wrong, add a note, and tap **Upload**. You get a short recording ID. You can also download the raw JSON.
+4. Analyse it:
+
+```bash
+node tools/analyze-recording.mjs <recording-id>            # fetches from the live site
+node tools/analyze-recording.mjs signify-gyro-....json     # or a downloaded file
+```
+
+The report shows the sample rate, gyro bias and noise, holding angle, which sensor axis moved in each step, and whether the pointer moved the way the step asked (✓ / ✗ reversed / ✗ wrong axis).
+
+> Recordings are stored as files under `RECORDINGS_DIR`. On hosts with ephemeral disks (like Render's free tier) they're lost when the server restarts, so analyse them soon or keep the downloaded file.
 
 ## 🩺 Troubleshooting
 

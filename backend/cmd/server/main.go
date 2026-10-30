@@ -11,11 +11,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/Pranav-Conova/Signify/backend/internal/convert"
+	"github.com/Pranav-Conova/Signify/backend/internal/recordings"
 	"github.com/Pranav-Conova/Signify/backend/internal/session"
 	"github.com/Pranav-Conova/Signify/backend/internal/web"
 	"github.com/Pranav-Conova/Signify/backend/internal/ws"
@@ -50,6 +52,12 @@ func main() {
 	hub := session.NewHub(4*time.Hour, 10000)
 	conv := convert.New(os.Getenv("SOFFICE_PATH"), 1, 120*time.Second)
 	slog.Info("pptx conversion", "available", conv.Available())
+	recDir := env("RECORDINGS_DIR", filepath.Join(os.TempDir(), "signify-recordings"))
+	recs, err := recordings.New(recDir, 500)
+	if err != nil {
+		slog.Error("recordings dir", "dir", recDir, "err", err)
+		os.Exit(1)
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +79,8 @@ func main() {
 		writeJSON(w, http.StatusCreated, creds)
 	})
 	mux.Handle("POST /api/convert", conv)
+	mux.HandleFunc("POST /api/recordings", recs.Upload)
+	mux.HandleFunc("GET /api/recordings/{id}", recs.Download)
 	mux.Handle("GET /ws/signal", &ws.Handler{Hub: hub, OriginPatterns: origins})
 	mux.Handle("/", web.Handler())
 
