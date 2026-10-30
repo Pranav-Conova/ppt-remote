@@ -30,6 +30,12 @@ import {
 
 /** Pressing Pointer/Draw again within this window continues from the last spot instead of re-centring. */
 const CONTINUE_MS = 1500;
+/**
+ * While holding Pointer, dragging the finger down this far (CSS px, ~7 mm)
+ * starts drawing and dragging back up this far stops. Large enough to
+ * ignore a finger's natural wobble.
+ */
+const DRAW_DRAG_PX = 28;
 /** Touchpad fallback: slide widths moved per pixel dragged. */
 const TOUCHPAD_GAIN = 1 / 350;
 
@@ -57,7 +63,8 @@ export default function Remote() {
   const seq = useRef(0);
   const hold = useRef<HoldMode | null>(null);
   const lastRelease = useRef(-Infinity);
-  const touch = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  /** Finger on the Pointer pad. extremeY: highest point while not drawing, lowest while drawing. */
+  const touch = useRef<{ x: number; y: number; px: number; py: number; extremeY: number } | null>(null);
 
   // ---- link -------------------------------------------------------------------------
   useEffect(() => {
@@ -141,19 +148,41 @@ export default function Remote() {
     const recentre = performance.now() - lastRelease.current > CONTINUE_MS;
     g.begin(recentre);
     const [x, y] = g.position;
-    touch.current = { x, y, px: e.clientX, py: e.clientY };
+    touch.current = { x, y, px: e.clientX, py: e.clientY, extremeY: e.clientY };
     sendPointer(x, y);
     buzz(15);
   };
 
+  /** Pen down/up while holding Pointer; the stroke starts and ends exactly at the dot. */
+  const setPen = (on: boolean, fingerY: number) => {
+    hold.current = on ? "draw" : "pointer";
+    setHolding(hold.current);
+    touch.current!.extremeY = fingerY;
+    const [x, y] = gyro.current!.position;
+    sendPointer(x, y);
+    buzz(on ? 20 : 10);
+  };
+
   const moveHold = (e: React.PointerEvent) => {
-    // Touchpad fallback for phones without a usable gyroscope. Decide by whether
-    // gyro data actually arrives, not by the permission state: newer Chrome has
-    // DeviceMotionEvent.requestPermission too, so `motion` can stay "unknown"
-    // while the gyro already drives the dot. Treating that as "no gyro" let
-    // finger movement snap the dot back to where the touch began.
     const t = touch.current;
-    if (!hold.current || !t || gyro.current?.hasData) return;
+    if (!hold.current || !t) return;
+    // Decide by whether gyro data actually arrives, not by the permission state:
+    // newer Chrome has DeviceMotionEvent.requestPermission too, so `motion` can
+    // stay "unknown" while the gyro already drives the dot. Treating that as
+    // "no gyro" let finger movement snap the dot back to where the touch began.
+    if (gyro.current?.hasData) {
+      // The gyro aims; the finger only lifts the pen. Measuring from the
+      // highest/lowest point means dragging up while not drawing does nothing.
+      if (hold.current === "pointer") {
+        t.extremeY = Math.min(t.extremeY, e.clientY);
+        if (e.clientY - t.extremeY > DRAW_DRAG_PX) setPen(true, e.clientY);
+      } else {
+        t.extremeY = Math.max(t.extremeY, e.clientY);
+        if (t.extremeY - e.clientY > DRAW_DRAG_PX) setPen(false, e.clientY);
+      }
+      return;
+    }
+    // Touchpad fallback for phones without a usable gyroscope: dragging moves the dot.
     t.x = Math.min(1, Math.max(0, t.x + (e.clientX - t.px) * TOUCHPAD_GAIN));
     t.y = Math.min(1, Math.max(0, t.y + (e.clientY - t.py) * TOUCHPAD_GAIN * (16 / 9)));
     t.px = e.clientX;
@@ -299,23 +328,14 @@ export default function Remote() {
 
       <div className={`remote-grid${connected ? "" : " offline"}`}>
         <HoldPad
-          icon={MousePointer2}
-          label="Pointer"
-          hint="Hold & aim"
-          active={holding === "pointer"}
+          icon={holding === "draw" ? PenLine : MousePointer2}
+          label={holding === "draw" ? "Drawing" : "Pointer"}
+          hint={holding === "draw" ? "Drag up to stop" : "Hold to point · drag down to draw"}
+          active={holding !== null}
           onDown={(e) => startHold("pointer", e)}
           onMove={moveHold}
           onUp={endHold}
-        />
-        <HoldPad
-          icon={PenLine}
-          label="Draw"
-          hint="Hold & move"
-          active={holding === "draw"}
-          onDown={(e) => startHold("draw", e)}
-          onMove={moveHold}
-          onUp={endHold}
-          className="draw"
+          className={holding === "draw" ? "draw" : ""}
         />
         <TapButton className="prev" onTap={() => act("prev")}>
           <ChevronLeft size={30} aria-hidden="true" />

@@ -478,7 +478,7 @@ export default function Home() {
                   <span className="step-num">3</span>
                   <div>
                     <strong>Hold Pointer and aim</strong>
-                    <p className="muted">Tilt to move the dot. Hold Draw to circle what matters.</p>
+                    <p className="muted">Tilt to move the dot. Drag down on Pointer to circle what matters.</p>
                   </div>
                 </li>
               </ol>

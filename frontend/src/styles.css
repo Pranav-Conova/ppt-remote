@@ -1493,7 +1493,7 @@ kbd {
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 2.1fr 1.4fr 0.9fr;
   grid-template-areas:
-    "pointer pointer draw"
+    "pointer pointer pointer"
     "prev next next"
     "undo clear blank";
   gap: 10px;
@@ -1507,21 +1507,18 @@ kbd {
   grid-area: pointer;
 }
 .remote-grid > :nth-child(2) {
-  grid-area: draw;
-}
-.remote-grid > :nth-child(3) {
   grid-area: prev;
 }
-.remote-grid > :nth-child(4) {
+.remote-grid > :nth-child(3) {
   grid-area: next;
 }
-.remote-grid > :nth-child(5) {
+.remote-grid > :nth-child(4) {
   grid-area: undo;
 }
-.remote-grid > :nth-child(6) {
+.remote-grid > :nth-child(5) {
   grid-area: clear;
 }
-.remote-grid > :nth-child(7) {
+.remote-grid > :nth-child(6) {
   grid-area: blank;
 }
 .pad {

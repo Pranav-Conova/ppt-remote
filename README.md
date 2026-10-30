@@ -58,8 +58,8 @@ The Go server only serves the app, pairs devices and converts PowerPoint files.
 |---|---|---|
 | 📄 | **PDF & PowerPoint** | PDFs render locally with pdf.js and are never uploaded. PPT/PPTX/ODP files are converted to PDF on the server with LibreOffice. |
 | 🖐️ | **Hand gestures** | MediaPipe Hand Landmarker runs on the GPU inside a Web Worker. There are six actions, and each one's five-finger pattern is customizable. |
-| 📱 | **Phone remote** | Pair with a QR code. Big touch targets for Next, Prev, Pointer, Draw, Undo, Clear and Blank, plus a live slide counter. |
-| 🔴 | **Gyro laser pointer** | Hold to point, measured as yaw around gravity so it works at any holding angle. A One Euro filter smooths it. |
+| 📱 | **Phone remote** | Pair with a QR code. Big touch targets for Next, Prev, Pointer, Undo, Clear and Blank, plus a live slide counter. |
+| 🔴 | **Gyro laser pointer** | Hold to point; drag down on the button to draw. Turning is measured in "player space" so it works at any holding angle, with tightening, acceleration, drift correction and soft smoothing. |
 | ✍️ | **Annotations** | Draw with your hand or your phone. Strokes are kept per slide and survive window resizes. |
 | 🎥 | **Camera overlay** | Optional mirrored picture-in-picture in any corner of the slide. |
 | ⚡ | **Low latency** | Direct WebRTC link on the same Wi-Fi, with automatic fallback to a server relay. A live RTT badge shows which one is in use. |
@@ -157,11 +157,11 @@ All of these can be changed on the home page. Gestures must be held for about 3 
 | Control | Action |
 |---|---|
 | **Next ▶ / ◀ Prev** | Change slide |
-| **Pointer** (hold) | Laser dot. Aim the phone at the screen. |
-| **Draw** (hold) | Draw with the phone. Continues from the dot if pressed within 1.5 s. |
+| **Pointer** (hold) | Laser dot. Aim the phone at the screen. Continues from the last spot if pressed within 1.5 s. |
+| **Pointer**, drag down | While holding, drag your finger down to draw from where the dot is; drag up to stop. Needs the gyro (without one, dragging moves the dot instead). |
 | **Undo / Clear** | Remove the last stroke, or all strokes on the slide |
 | **Blank** | Black out the screen |
-| **⚙** | Sensitivity, smoothing, invert X/Y |
+| **⚙** | Sensitivity, acceleration, smoothing, drift correction, invert X/Y |
 
 ### Keyboard
 
