@@ -30,6 +30,26 @@ const DEADZONE = 0.4;
 
 type PermissionFn = () => Promise<"granted" | "denied">;
 
+/**
+ * Splits angular velocity into turning (yaw) and tilting (pitch), in deg/s.
+ *
+ * Careful: DeviceMotionEvent.rotationRate is NOT named like
+ * DeviceOrientationEvent. Per the W3C spec, rotationRate.alpha is the rate
+ * about the device X axis, beta about Y and gamma about Z (x: right, y: top
+ * of the screen, z: out of the screen). Chrome and Safari both follow this.
+ *
+ * @param up Gravity "up" direction in device coordinates (any length).
+ */
+export function yawPitch(alpha: number, beta: number, gamma: number, up: readonly [number, number, number]) {
+  const [ux, uy, uz] = up;
+  const len = Math.hypot(ux, uy, uz) || 1;
+  // Yaw: rotation about the world-vertical axis, whatever the holding angle.
+  const yaw = (alpha * ux + beta * uy + gamma * uz) / len;
+  // Pitch: tilting the top of the phone up/down, i.e. rotation about X.
+  const pitch = alpha;
+  return { yaw, pitch };
+}
+
 export function motionSupported(): boolean {
   return typeof window !== "undefined" && "DeviceMotionEvent" in window;
 }
@@ -132,18 +152,14 @@ export class GyroPointer {
     this.lastT = t;
     if (dt === 0) return;
 
-    // Angular velocity in device axes: x→beta, y→gamma, z→alpha (deg/s).
-    const [ux, uy, uz] = this.up;
-    const len = Math.hypot(ux, uy, uz) || 1;
-    let yaw = (r.beta * ux + r.gamma * uy + r.alpha * uz) / len;
-    let pitch = r.beta;
+    let { yaw, pitch } = yawPitch(r.alpha, r.beta, r.gamma, this.up);
     if (Math.abs(yaw) < DEADZONE) yaw = 0;
     if (Math.abs(pitch) < DEADZONE) pitch = 0;
 
     const { degreesPerWidth, invertX, invertY } = this.settings;
     const degreesPerHeight = degreesPerWidth / SLIDE_ASPECT;
     // Turning left (positive yaw about "up") moves the pointer left; tilting
-    // the top up (positive beta) moves it up.
+    // the top up (positive pitch) moves it up.
     this.x += ((invertX ? 1 : -1) * yaw * dt) / degreesPerWidth;
     this.y += ((invertY ? 1 : -1) * pitch * dt) / degreesPerHeight;
     this.x = Math.min(1, Math.max(0, this.x));

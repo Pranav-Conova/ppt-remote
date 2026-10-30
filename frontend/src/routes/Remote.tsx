@@ -12,7 +12,8 @@ import {
   type GyroSettings,
 } from "../remote/gyro";
 
-const GYRO_KEY = "signify.gyro.v1";
+// v2: v1 builds mapped the gyro axes wrong, so saved invert toggles are stale.
+const GYRO_KEY = "signify.gyro.v2";
 /** Pressing Pointer/Draw again within this window continues from the last spot instead of re-centring. */
 const CONTINUE_MS = 1500;
 /** Touchpad fallback: slide widths moved per pixel dragged. */
