@@ -1,4 +1,18 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eraser,
+  MonitorOff,
+  MousePointer2,
+  PenLine,
+  Settings,
+  ShieldAlert,
+  Undo2,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import { Switch } from "../ui/Switch";
 import { useParams } from "react-router-dom";
 import { Link, fetchConfig, type LinkStatus } from "../link/link";
 import { FLAG_DRAW, FLAG_VISIBLE, encodePointer, type RemoteAction } from "../link/protocol";
@@ -185,31 +199,51 @@ export default function Remote() {
     <div className="remote">
       <header className="remote-bar">
         <StatusBadge status={status} waitingFor="presenter" />
-        <span className="counter">{deckState ? `${deckState.slide + 1} / ${deckState.total}` : "– / –"}</span>
-        <button className="icon-btn" onClick={() => setShowSettings((s) => !s)} aria-label="Pointer settings">
-          ⚙
+        <span className="remote-counter" aria-live="polite">
+          {deckState ? (
+            <>
+              <strong>{deckState.slide + 1}</strong>
+              <span> / {deckState.total}</span>
+            </>
+          ) : (
+            "– / –"
+          )}
+        </span>
+        <button
+          className={`icon-btn${showSettings ? " on" : ""}`}
+          onClick={() => setShowSettings((s) => !s)}
+          aria-label="Pointer settings"
+          aria-expanded={showSettings}
+        >
+          <Settings size={18} />
         </button>
       </header>
 
       {insecure && (
         <p className="notice">
+          <ShieldAlert size={16} aria-hidden="true" />
           Open this page over HTTPS to use the motion pointer. Buttons still work, and you can drag on the pointer
           pad.
         </p>
       )}
       {!insecure && needsMotion && (
         <button className="notice notice-btn" onClick={enableMotion}>
+          <Zap size={16} aria-hidden="true" />
           Tap to enable the motion pointer
         </button>
       )}
       {motion === "denied" && (
-        <p className="notice">Motion access was denied. Drag on the pointer pad instead, or reload to try again.</p>
+        <p className="notice">
+          <ShieldAlert size={16} aria-hidden="true" />
+          Motion access was denied. Drag on the pointer pad instead, or reload to try again.</p>
       )}
 
       {showSettings && (
         <section className="settings-sheet">
-          <label>
-            Sensitivity
+          <label className="range">
+            <span className="range-head">
+              Sensitivity <output>{80 - gyroSettings.degreesPerWidth}</output>
+            </span>
             <input
               type="range"
               min={10}
@@ -220,8 +254,10 @@ export default function Remote() {
               onChange={(e) => setGyroSettings({ ...gyroSettings, degreesPerWidth: 80 - Number(e.target.value) })}
             />
           </label>
-          <label>
-            Smoothing
+          <label className="range">
+            <span className="range-head">
+              Smoothing <output>{Math.round(gyroSettings.smoothing * 100)}%</output>
+            </span>
             <input
               type="range"
               min={0}
@@ -231,27 +267,18 @@ export default function Remote() {
               onChange={(e) => setGyroSettings({ ...gyroSettings, smoothing: Number(e.target.value) })}
             />
           </label>
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={gyroSettings.invertX}
-              onChange={(e) => setGyroSettings({ ...gyroSettings, invertX: e.target.checked })}
-            />
+          <Switch checked={gyroSettings.invertX} onChange={(v) => setGyroSettings({ ...gyroSettings, invertX: v })}>
             Invert left/right
-          </label>
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={gyroSettings.invertY}
-              onChange={(e) => setGyroSettings({ ...gyroSettings, invertY: e.target.checked })}
-            />
+          </Switch>
+          <Switch checked={gyroSettings.invertY} onChange={(v) => setGyroSettings({ ...gyroSettings, invertY: v })}>
             Invert up/down
-          </label>
+          </Switch>
         </section>
       )}
 
       <div className={`remote-grid${connected ? "" : " offline"}`}>
         <HoldPad
+          icon={MousePointer2}
           label="Pointer"
           hint="Hold & aim"
           active={holding === "pointer"}
@@ -260,6 +287,7 @@ export default function Remote() {
           onUp={endHold}
         />
         <HoldPad
+          icon={PenLine}
           label="Draw"
           hint="Hold & move"
           active={holding === "draw"}
@@ -269,15 +297,24 @@ export default function Remote() {
           className="draw"
         />
         <TapButton className="prev" onTap={() => act("prev")}>
-          ◀ Prev
+          <ChevronLeft size={30} aria-hidden="true" />
+          <span>Prev</span>
         </TapButton>
         <TapButton className="next" onTap={() => act("next")}>
-          Next ▶
+          <span>Next</span>
+          <ChevronRight size={30} aria-hidden="true" />
         </TapButton>
-        <TapButton onTap={() => act("undo")}>Undo</TapButton>
-        <TapButton onTap={() => act("clear")}>Clear</TapButton>
-        <TapButton className={deckState?.blank ? "on" : ""} onTap={() => act("blank")}>
-          Blank
+        <TapButton className="small" onTap={() => act("undo")}>
+          <Undo2 size={20} aria-hidden="true" />
+          <span>Undo</span>
+        </TapButton>
+        <TapButton className="small" onTap={() => act("clear")}>
+          <Eraser size={20} aria-hidden="true" />
+          <span>Clear</span>
+        </TapButton>
+        <TapButton className={`small${deckState?.blank ? " on" : ""}`} onTap={() => act("blank")}>
+          <MonitorOff size={20} aria-hidden="true" />
+          <span>Blank</span>
         </TapButton>
       </div>
     </div>
@@ -302,6 +339,7 @@ function TapButton({ children, onTap, className = "" }: { children: ReactNode; o
 }
 
 function HoldPad(props: {
+  icon: LucideIcon;
   label: string;
   hint: string;
   active: boolean;
@@ -323,6 +361,8 @@ function HoldPad(props: {
       onLostPointerCapture={props.onUp}
       onContextMenu={(e) => e.preventDefault()}
     >
+      <span className="pad-rings" aria-hidden="true" />
+      <props.icon size={30} aria-hidden="true" />
       <span className="pad-label">{props.label}</span>
       <span className="pad-hint">{props.hint}</span>
     </button>

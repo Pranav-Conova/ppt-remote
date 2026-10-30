@@ -19,7 +19,7 @@ export function StatusBadge({ status, waitingFor }: { status: LinkStatus | null;
       label = `Waiting for ${waitingFor}`;
     }
   }
-  const rtt = status && status.transport !== "none" && status.rtt != null ? ` · ${Math.round(status.rtt)} ms` : "";
+  const rtt = status && status.transport !== "none" && status.rtt != null ? `${Math.round(status.rtt)} ms` : null;
   return (
     <span
       className={`badge badge-${tone}`}
@@ -27,7 +27,7 @@ export function StatusBadge({ status, waitingFor }: { status: LinkStatus | null;
     >
       <span className="badge-dot" />
       {label}
-      {rtt}
+      {rtt && <span className="badge-rtt">{rtt}</span>}
     </span>
   );
 }

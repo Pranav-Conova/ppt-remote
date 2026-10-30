@@ -1,12 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
+import {
+  ArrowLeft,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Maximize,
+  Minimize,
+  MonitorOff,
+  Smartphone,
+  Type,
+  Undo2,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { getDeck, type LoadedDeck } from "../lib/deckStore";
 import { loadSettings } from "../lib/settings";
 import { PdfDeck } from "../slides/pdfDeck";
 import { PointerLayer } from "../overlay/PointerLayer";
 import { DrawLayer } from "../overlay/DrawLayer";
-import { GestureEngine } from "../gesture/gestureEngine";
+import { GestureEngine, type HandAction } from "../gesture/gestureEngine";
 import { startHandTracking } from "../gesture/handTracker";
 import { Link, fetchConfig, type LinkStatus } from "../link/link";
 import { FLAG_DRAW, FLAG_VISIBLE, SeqFilter, decodePointer, type ControlMessage } from "../link/protocol";
@@ -36,6 +50,14 @@ interface Pairing {
 /** How long the pointer stays up after the last update from its source. */
 const POINTER_TIMEOUT_MS = 1000;
 
+/** Brief on-screen confirmation when a hand gesture fires. */
+const GESTURE_TOASTS: Record<HandAction, [LucideIcon, string]> = {
+  next: [ChevronRight, "Next slide"],
+  previous: [ChevronLeft, "Previous slide"],
+  undo: [Undo2, "Undo"],
+  toggle_text: [Type, "Text"],
+};
+
 function PresentView({ deck }: { deck: LoadedDeck }) {
   const navigate = useNavigate();
   const [settings] = useState(loadSettings);
@@ -51,6 +73,14 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
   const [linkStatus, setLinkStatus] = useState<LinkStatus | null>(null);
   const [camera, setCamera] = useState<"off" | "loading" | "on" | "error">("off");
   const [box, setBox] = useState({ w: 0, h: 0 });
+  const [toast, setToast] = useState<{ key: number; action: HandAction } | null>(null);
+  const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement);
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const slideCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -268,6 +298,7 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
       action: (a) => {
         const act = actions.current;
         ({ next: act.next, previous: act.prev, undo: act.undo, toggle_text: act.text })[a]();
+        setToast((t) => ({ key: (t?.key ?? 0) + 1, action: a }));
       },
       pointer: (x, y, mode) => {
         if (phoneActive()) return;
@@ -381,48 +412,103 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
       {error && (
         <div className="center-screen">
           <p className="error">{error}</p>
-          <RouterLink className="btn btn-primary" to="/">
+          <RouterLink className="btn btn-shimmer" to="/">
             Back
           </RouterLink>
         </div>
       )}
 
+      {toast && (
+        <GestureToast key={toast.key} action={toast.action} onDone={() => setToast(null)} />
+      )}
+
       <div className={`present-controls${controlsVisible || phonePanel ? " visible" : ""}`}>
-        <button className="btn btn-ghost top-left" onClick={() => navigate("/")}>
-          ← Back
-        </button>
-        <div className="top-right">
-          {total > 0 && (
-            <span className="counter">
-              {slide + 1} / {total}
+        <div className="hud-top-right">
+          {blank && (
+            <span className="badge">
+              <MonitorOff size={14} aria-hidden="true" /> Screen blanked
             </span>
           )}
-          {camera === "loading" && <span className="badge badge-idle">Starting camera…</span>}
-          {camera === "error" && <span className="badge badge-bad">Camera unavailable</span>}
+          {camera === "loading" && (
+            <span className="badge">
+              <Camera size={14} aria-hidden="true" /> Starting camera…
+            </span>
+          )}
+          {camera === "error" && (
+            <span className="badge badge-bad">
+              <span className="badge-dot" /> Camera unavailable
+            </span>
+          )}
         </div>
-        <div className="bottom-left">
-          <button className="btn btn-ghost" onClick={() => setPhonePanel((p) => !p)}>
-            📱 {connected ? "Phone" : "Connect phone"}
+
+        <div className="toolbar" role="toolbar" aria-label="Presentation controls">
+          <button className="tool" onClick={() => navigate("/")} aria-label="Back to home" title="Back">
+            <ArrowLeft size={18} />
           </button>
-          {linkStatus && connected && <StatusBadge status={linkStatus} waitingFor="phone" />}
+          <span className="tool-sep" />
+          <button
+            className="tool"
+            onClick={() => actions.current.prev()}
+            disabled={slide === 0}
+            aria-label="Previous slide"
+            title="Previous (←)"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <span className="tool-counter" aria-live="polite">
+            {total > 0 ? (
+              <>
+                <strong>{slide + 1}</strong> / {total}
+              </>
+            ) : (
+              "–"
+            )}
+          </span>
+          <button
+            className="tool"
+            onClick={() => actions.current.next()}
+            disabled={slide >= total - 1}
+            aria-label="Next slide"
+            title="Next (→)"
+          >
+            <ChevronRight size={20} />
+          </button>
+          <span className="tool-sep" />
+          <button
+            className={`tool tool-wide${phonePanel ? " on" : ""}`}
+            onClick={() => setPhonePanel((p) => !p)}
+            aria-expanded={phonePanel}
+            title="Phone remote (P)"
+          >
+            <Smartphone size={18} aria-hidden="true" />
+            {connected && linkStatus ? <StatusBadge status={linkStatus} waitingFor="phone" /> : <span>Connect phone</span>}
+          </button>
+          <button
+            className="tool"
+            onClick={toggleFullscreen}
+            aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            title="Fullscreen (F)"
+          >
+            {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+          </button>
         </div>
-        <button className="btn btn-ghost bottom-right" onClick={toggleFullscreen} aria-label="Toggle fullscreen">
-          ⛶
-        </button>
       </div>
 
       {phonePanel && (
         <div className="phone-panel" role="dialog" aria-label="Connect phone">
           <button className="close" onClick={() => setPhonePanel(false)} aria-label="Close">
-            ×
+            <X size={18} />
           </button>
+          <span className="feature-icon">
+            <Smartphone size={20} aria-hidden="true" />
+          </span>
           <h2>Use your phone as a remote</h2>
           {pairError ? (
-            <p className="error">{pairError}</p>
+            <p className="error small">{pairError}</p>
           ) : pairing ? (
             <>
               <div className="qr">
-                <QRCodeSVG value={pairing.url} size={220} marginSize={2} />
+                <QRCodeSVG value={pairing.url} size={200} marginSize={1} />
               </div>
               {pairing.unreachable && (
                 <p className="error small">
@@ -430,7 +516,7 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
                   address or an HTTPS tunnel, or set PUBLIC_URL on the server.
                 </p>
               )}
-              <p className="muted small">Scan this with your phone's camera. Use the same Wi-Fi for the lowest pointer lag.</p>
+              <p className="muted small">Scan with your phone's camera. Use the same Wi-Fi for the lowest pointer lag.</p>
               <StatusBadge status={linkStatus} waitingFor="phone" />
               <details>
                 <summary className="muted small">Can't scan?</summary>
@@ -438,10 +524,20 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
               </details>
             </>
           ) : (
-            <p>Creating pairing code…</p>
+            <p className="muted">Creating pairing code…</p>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function GestureToast({ action, onDone }: { action: HandAction; onDone: () => void }) {
+  const [Icon, label] = GESTURE_TOASTS[action];
+  return (
+    <div className="gesture-toast" role="status" onAnimationEnd={onDone}>
+      <Icon size={16} aria-hidden="true" />
+      {label}
     </div>
   );
 }
