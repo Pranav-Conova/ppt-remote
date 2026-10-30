@@ -1,37 +1,21 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-*.egg-info/
-dist/
-build/
-*.egg
-
-# Virtual environment
-venv/
-env/
-.venv/
-
-# Django
-db.sqlite3
-db.sqlite3-journal
-/media/
-/staticfiles/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
+# Dependencies / build output
+node_modules/
+frontend/dist/
+# Built frontend is embedded into the Go binary; only the placeholder is tracked.
+backend/internal/web/dist/*
+!backend/internal/web/dist/.gitkeep
+*.exe
+/signify
 
 # Environment variables
 .env
 *.env
+!.env.example
 
-# Uploads (generated at runtime)
-uploads/
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
