@@ -147,9 +147,13 @@ export default function Remote() {
   };
 
   const moveHold = (e: React.PointerEvent) => {
-    // Touchpad fallback for phones without a usable gyroscope.
+    // Touchpad fallback for phones without a usable gyroscope. Decide by whether
+    // gyro data actually arrives, not by the permission state: newer Chrome has
+    // DeviceMotionEvent.requestPermission too, so `motion` can stay "unknown"
+    // while the gyro already drives the dot. Treating that as "no gyro" let
+    // finger movement snap the dot back to where the touch began.
     const t = touch.current;
-    if (!hold.current || !t || (motion === "granted" && gyro.current?.hasData)) return;
+    if (!hold.current || !t || gyro.current?.hasData) return;
     t.x = Math.min(1, Math.max(0, t.x + (e.clientX - t.px) * TOUCHPAD_GAIN));
     t.y = Math.min(1, Math.max(0, t.y + (e.clientY - t.py) * TOUCHPAD_GAIN * (16 / 9)));
     t.px = e.clientX;
