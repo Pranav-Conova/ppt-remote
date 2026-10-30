@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCEL_FAST,
+  DEFAULT_GYRO,
+  GyroPointer,
   ACCEL_SLOW,
   GyroCalibrator,
   STILL_WINDOW,
@@ -166,3 +168,43 @@ describe("SoftTieredSmoother", () => {
   });
 });
 
+describe("GyroPointer pipeline (simulated phone)", () => {
+  // Minimal window/devicemotion stand-in so the real class can run in Node.
+  function simulate(seconds: number, rate: (t: number) => [number, number, number]) {
+    const target = new EventTarget();
+    (globalThis as unknown as { window: EventTarget }).window = target;
+    const p = new GyroPointer({ ...DEFAULT_GYRO });
+    let last: [number, number] = [0.5, 0.5];
+    p.onMove = (x, y) => (last = [x, y]);
+    const send = (t: number, active: boolean) => {
+      const [a, b, g] = rate(t);
+      const e = new Event("devicemotion");
+      Object.defineProperties(e, {
+        timeStamp: { value: t * 1000 },
+        rotationRate: { value: { alpha: a, beta: b, gamma: g } },
+        accelerationIncludingGravity: { value: { x: 0, y: 0.3, z: 9.8 } }, // held flat
+      });
+      if (active && !p["active"]) p.begin(true);
+      target.dispatchEvent(e);
+    };
+    // 2 s idle first (phone resting in the hand), then the pointer is held.
+    let t = 0;
+    for (; t < 2; t += 1 / 60) send(t, false);
+    for (; t < 2 + seconds; t += 1 / 60) send(t, true);
+    p.dispose();
+    return last;
+  }
+  const tremor = (t: number) => 1.0 * Math.sin(2 * Math.PI * 9 * t) + 0.4 * Math.sin(2 * Math.PI * 11.3 * t + 1);
+
+  it("holds still despite gyro bias and hand tremor", () => {
+    const [x, y] = simulate(3, (t) => [0.8 + tremor(t), 0.5 + tremor(t + 0.3), 0.8 + tremor(t + 0.7)]);
+    expect(Math.abs(x - 0.5)).toBeLessThan(0.02);
+    expect(Math.abs(y - 0.5)).toBeLessThan(0.02);
+  });
+
+  it("still follows a slow, deliberate turn", () => {
+    // 3°/s turn to the right (negative gamma when flat) plus the same bias/tremor.
+    const [x] = simulate(3, (t) => [0.8 + tremor(t), 0.5 + tremor(t + 0.3), 0.8 - 3 + tremor(t + 0.7)]);
+    expect(x - 0.5).toBeGreaterThan(0.05);
+  });
+});

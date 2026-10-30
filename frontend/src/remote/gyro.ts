@@ -69,15 +69,19 @@ export const TIGHTEN_THRESHOLD = 4;
 // ---- drift correction & steady state ------------------------------------
 /** Samples per stillness window (~0.5 s at 60 Hz). */
 export const STILL_WINDOW = 30;
-/** Bias is only learned when every axis varies less than this (deg/s). */
-const CALIBRATE_MAX_STD = 0.5;
+/**
+ * Bias is only learned when every axis varies less than this (deg/s).
+ * Loose enough to include a phone held in the hand (tremor ≈ 0.5-1 deg/s);
+ * tremor averages out, so the window mean still tracks the bias.
+ */
+const CALIBRATE_MAX_STD = 1.5;
 /** ...and the average rate is small enough to plausibly be bias, not motion. */
-const CALIBRATE_MAX_MEAN = 1.5;
+const CALIBRATE_MAX_MEAN = 1.0;
 /** "Steady" = held but not moving: jitter without a consistent direction. */
 const STEADY_MAX_STD = 1.5;
 const STEADY_MAX_MEAN = 0.75;
-/** How fast the bias estimate follows (per still sample; ~1 s time constant). */
-const BIAS_RATE = 0.02;
+/** How fast the bias estimate follows (per still sample; ~1.7 s time constant). */
+const BIAS_RATE = 0.01;
 
 /**
  * Tracks gyro bias and stillness over a sliding window.
