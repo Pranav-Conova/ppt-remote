@@ -1,10 +1,10 @@
-# Render Blueprint: New > Blueprint, pick this repo, branch v2.
+# Render Blueprint: New > Blueprint, pick this repo (main branch).
 services:
   - type: web
     name: signify
     runtime: docker
     plan: free
-    branch: v2
+    branch: main
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /healthz
