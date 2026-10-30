@@ -271,6 +271,7 @@ export default function Remote() {
               value={gyroSettings.smoothing}
               onChange={(e) => setGyroSettings({ ...gyroSettings, smoothing: Number(e.target.value) })}
             />
+            <span className="range-hint">Steadies small movements only; big moves stay instant</span>
           </label>
           <Switch
             checked={gyroSettings.autoCalibrate}

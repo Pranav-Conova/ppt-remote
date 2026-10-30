@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { ACCEL_FAST, ACCEL_SLOW, GyroCalibrator, STILL_WINDOW, accelerationGain, tighten, yawPitch } from "./gyro";
+import {
+  ACCEL_FAST,
+  ACCEL_SLOW,
+  GyroCalibrator,
+  STILL_WINDOW,
+  SoftTieredSmoother,
+  accelerationGain,
+  tighten,
+  yawPitch,
+} from "./gyro";
 
 // rotationRate as browsers report it: alpha = about X, beta = about Y, gamma = about Z.
 describe("yawPitch (player space)", () => {
@@ -129,3 +138,31 @@ describe("GyroCalibrator", () => {
     expect(moving.steady).toBe(false);
   });
 });
+
+describe("SoftTieredSmoother", () => {
+  it("passes fast movement straight through with no lag", () => {
+    const s = new SoftTieredSmoother();
+    expect(s.apply(40, -10, 6)).toEqual([40, -10]); // first sample, already exact
+  });
+
+  it("averages slow movement, steadying jitter", () => {
+    const s = new SoftTieredSmoother();
+    let out: number[] = [];
+    // Jitter alternating ±1 deg/s (below threshold/2 = 3): fully smoothed.
+    for (let i = 0; i < 16; i++) out = s.apply(i % 2 ? 1 : -1, 0, 6);
+    expect(Math.abs(out[0])).toBeLessThan(0.01);
+  });
+
+  it("blends between the thresholds", () => {
+    const s = new SoftTieredSmoother();
+    const [y] = s.apply(4.5, 0, 6); // halfway between 3 and 6 → half direct
+    expect(y).toBeGreaterThan(2.25);
+    expect(y).toBeLessThan(4.5);
+  });
+
+  it("does nothing when smoothing is off", () => {
+    const s = new SoftTieredSmoother();
+    expect(s.apply(0.5, 0.2, 0)).toEqual([0.5, 0.2]);
+  });
+});
+

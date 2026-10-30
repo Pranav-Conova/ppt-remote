@@ -6,7 +6,10 @@
 // yawPitch), so it works however the phone is held. The pointer starts at
 // the centre each time the button is pressed
 // (clutch), so there is no long-term drift to calibrate away.
-import { OneEuroFilter } from "./oneEuro";
+//
+// Per-sample pipeline (each stage is its own function/class below):
+//   raw rate → bias removal → player-space yaw/pitch → soft tiered
+//   smoothing → tightening (+ steady freeze) → acceleration gain → position
 
 export interface GyroSettings {
   /** Degrees of rotation needed to sweep the full slide width. */
@@ -16,7 +19,10 @@ export interface GyroSettings {
    * precise small movements and faster big sweeps.
    */
   acceleration: number;
-  /** 0 (raw) .. 1 (very smooth) */
+  /**
+   * 0 (off) .. 1 (strong). Sets the speed below which movement is smoothed
+   * (0..SMOOTH_MAX_THRESHOLD deg/s); faster movement is never smoothed.
+   */
   smoothing: number;
   /** Learn and remove gyro bias (drift) whenever the phone is still. */
   autoCalibrate: boolean;
@@ -114,6 +120,44 @@ export class GyroCalibrator {
     }
     if (!autoCalibrate) return sample;
     return [a - this.bias[0], b - this.bias[1], g - this.bias[2]];
+  }
+}
+
+// ---- smoothing -------------------------------------------------------------
+/** Upper smoothing threshold (deg/s) at smoothing = 1. */
+export const SMOOTH_MAX_THRESHOLD = 12;
+/** Samples averaged for the smoothed part (~130 ms at 60 Hz). */
+const SMOOTH_SAMPLES = 8;
+
+/**
+ * Soft tiered smoothing (Jibb Smart, "Good gyro controls part 1").
+ * Movement slower than threshold/2 is fully smoothed (moving average),
+ * movement faster than threshold passes straight through, and in between
+ * the two are blended. Fast, intentional moves therefore get no added lag,
+ * while slow jittery input is steadied.
+ */
+export class SoftTieredSmoother {
+  private buf: [number, number][] = [];
+  private i = 0;
+
+  reset() {
+    this.buf = [];
+    this.i = 0;
+  }
+
+  apply(yaw: number, pitch: number, threshold: number): [number, number] {
+    if (threshold <= 0) return [yaw, pitch];
+    const lower = threshold / 2;
+    const w = Math.min(1, Math.max(0, (Math.hypot(yaw, pitch) - lower) / (threshold - lower)));
+    const part: [number, number] = [yaw * (1 - w), pitch * (1 - w)];
+    if (this.buf.length < SMOOTH_SAMPLES) this.buf.push(part);
+    else this.buf[this.i] = part;
+    this.i = (this.i + 1) % SMOOTH_SAMPLES;
+    // Average over the full window (missing samples count as zero), so the
+    // smoothed part ramps in rather than jumping at the start.
+    const sy = this.buf.reduce((s, v) => s + v[0], 0) / SMOOTH_SAMPLES;
+    const sp = this.buf.reduce((s, v) => s + v[1], 0) / SMOOTH_SAMPLES;
+    return [yaw * w + sy, pitch * w + sp];
   }
 }
 
@@ -215,15 +259,13 @@ export class GyroPointer {
   private x = 0.5;
   private y = 0.5;
   private lastT: number | null = null;
-  private fx = new OneEuroFilter();
-  private fy = new OneEuroFilter();
+  private smoother = new SoftTieredSmoother();
   private up: [number, number, number] = [0, 0.7, 0.7];
   private calibrator = new GyroCalibrator();
   private active = false;
 
   constructor(settings: GyroSettings) {
     this.settings = settings;
-    this.applySmoothing();
     window.addEventListener("devicemotion", this.handle);
   }
 
@@ -233,12 +275,12 @@ export class GyroPointer {
 
   update(settings: GyroSettings) {
     this.settings = settings;
-    this.applySmoothing();
   }
 
   /** Start emitting, from the centre of the slide or from the last position. */
   begin(recentre = true) {
     if (recentre) this.setPosition(0.5, 0.5);
+    this.smoother.reset();
     this.lastT = null;
     this.active = true;
   }
@@ -246,8 +288,6 @@ export class GyroPointer {
   setPosition(x: number, y: number) {
     this.x = x;
     this.y = y;
-    this.fx.reset(x);
-    this.fy.reset(y);
   }
 
   end() {
@@ -256,13 +296,6 @@ export class GyroPointer {
 
   get position(): [number, number] {
     return [this.x, this.y];
-  }
-
-  private applySmoothing() {
-    // smoothing 0 → 8Hz minimum cutoff (nearly raw); 1 → 0.3Hz (heavy).
-    const s = Math.min(1, Math.max(0, this.settings.smoothing));
-    const minCutoff = 8 * Math.pow(0.3 / 8, s);
-    this.fx.minCutoff = this.fy.minCutoff = minCutoff;
   }
 
   private handle = (e: DeviceMotionEvent) => {
@@ -293,7 +326,9 @@ export class GyroPointer {
     if (dt === 0) return;
 
     const turn = yawPitch(ra, rb, rg, this.up);
-    let [yaw, pitch] = tighten(turn.yaw, turn.pitch);
+    const smoothThreshold = Math.min(1, Math.max(0, this.settings.smoothing)) * SMOOTH_MAX_THRESHOLD;
+    const [sy, sp] = this.smoother.apply(turn.yaw, turn.pitch, smoothThreshold);
+    let [yaw, pitch] = tighten(sy, sp);
     // Held steady (tremor only): keep the dot perfectly still.
     if (this.calibrator.steady && Math.hypot(turn.yaw, turn.pitch) < TIGHTEN_THRESHOLD) yaw = pitch = 0;
 
@@ -307,6 +342,6 @@ export class GyroPointer {
     this.x = Math.min(1, Math.max(0, this.x));
     this.y = Math.min(1, Math.max(0, this.y));
 
-    this.onMove(this.fx.filter(this.x, dt), this.fy.filter(this.y, dt));
+    this.onMove(this.x, this.y);
   };
 }
