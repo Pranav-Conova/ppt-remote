@@ -4,7 +4,10 @@ export function StatusBadge({ status, waitingFor }: { status: LinkStatus | null;
   let tone = "idle";
   let label = "Connecting…";
   if (status) {
-    if (status.server === "offline") {
+    if (status.ended) {
+      tone = "bad";
+      label = "Ended";
+    } else if (status.server === "offline") {
       tone = "bad";
       label = "Server offline, retrying";
     } else if (status.server === "connecting") {

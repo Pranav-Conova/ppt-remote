@@ -7,6 +7,7 @@ import {
   MonitorOff,
   MousePointer2,
   PenLine,
+  PowerOff,
   Settings,
   ShieldAlert,
   Undo2,
@@ -85,6 +86,18 @@ export default function Remote() {
       link.current = null;
     };
   }, [id, token]);
+
+  // The presenter closed the presentation: stop the pointer and the sensors.
+  const ended = status?.ended ?? false;
+  useEffect(() => {
+    if (!ended) return;
+    hold.current = null;
+    setHolding(null);
+    setDeckState(null);
+    setShowSettings(false);
+    gyro.current?.dispose();
+    navigator.vibrate?.([30, 80, 30]);
+  }, [ended]);
 
   // ---- gyro -------------------------------------------------------------------------
   const sendPointer = (x: number, y: number) => {
@@ -208,6 +221,21 @@ export default function Remote() {
     return (
       <div className="center-screen remote">
         <p>This link is incomplete. Scan the QR code on the presenter's screen again.</p>
+      </div>
+    );
+  }
+
+  if (ended) {
+    return (
+      <div className="center-screen remote remote-ended">
+        <span className="feature-icon">
+          <PowerOff size={22} aria-hidden="true" />
+        </span>
+        <h1>Presentation ended</h1>
+        <p className="muted">
+          The presenter closed the presentation, so this remote has stopped. To control a new one, scan the QR code on
+          the presenter&apos;s home page.
+        </p>
       </div>
     );
   }

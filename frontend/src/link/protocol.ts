@@ -81,12 +81,16 @@ export type ControlMessage =
   | { t: "release" }
   | { t: "state"; slide: number; total: number; blank: boolean }
   | { t: "ping"; ts: number }
-  | { t: "pong"; ts: number };
+  | { t: "pong"; ts: number }
+  /** Presenter closed the presentation tab; the phone should stop. */
+  | { t: "end" };
 
 /** Messages only exchanged through the signaling server. */
 export type SignalMessage =
   | { t: "welcome"; peer: boolean }
   | { t: "peer-joined" }
   | { t: "peer-left" }
+  /** The presenter ended the session (server-side). */
+  | { t: "ended" }
   | { t: "sig"; gen: number; sdp?: RTCSessionDescriptionInit; ice?: RTCIceCandidateInit | null }
   | { t: "relay"; m: ControlMessage };

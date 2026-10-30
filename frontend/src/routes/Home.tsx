@@ -34,7 +34,7 @@ import {
 } from "../lib/settings";
 import { Aurora } from "../ui/Aurora";
 import { GitHubIcon } from "../ui/GitHubIcon";
-import { RemoteDemo } from "../ui/RemoteDemo";
+import { PairCard } from "../ui/PairCard";
 import { SpotlightCard } from "../ui/SpotlightCard";
 import { Switch } from "../ui/Switch";
 import { FULL_MOTION, gsap, SplitText, useGSAP } from "../ui/gsap";
@@ -98,7 +98,7 @@ const KEYS: [string[], string][] = [
   [["C"], "Clear slide"],
   [["T"], "Show text"],
   [["F"], "Fullscreen"],
-  [["P"], "Pair phone"],
+  [["P"], "Show pairing QR (asks first)"],
 ];
 
 export default function Home() {
@@ -463,15 +463,15 @@ export default function Home() {
                 <li>
                   <span className="step-num">1</span>
                   <div>
-                    <strong>Start presenting</strong>
-                    <p className="muted">Then press the phone button, or the P key.</p>
+                    <strong>Scan the QR code here</strong>
+                    <p className="muted">Before presenting, so the code never shows on the big screen.</p>
                   </div>
                 </li>
                 <li>
                   <span className="step-num">2</span>
                   <div>
-                    <strong>Scan the QR code</strong>
-                    <p className="muted">Use your phone's camera. Nothing to install.</p>
+                    <strong>Start presenting</strong>
+                    <p className="muted">Your phone stays connected. Closing this tab disconnects it.</p>
                   </div>
                 </li>
                 <li>
@@ -487,7 +487,7 @@ export default function Home() {
               </p>
             </div>
             <div className="card demo-card reveal">
-              <RemoteDemo />
+              <PairCard />
             </div>
           </div>
         </section>

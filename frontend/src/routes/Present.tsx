@@ -9,6 +9,7 @@ import {
   Maximize,
   Minimize,
   MonitorOff,
+  ShieldAlert,
   Smartphone,
   Type,
   Undo2,
@@ -22,7 +23,13 @@ import { PointerLayer } from "../overlay/PointerLayer";
 import { DrawLayer } from "../overlay/DrawLayer";
 import { GestureEngine, type HandAction } from "../gesture/gestureEngine";
 import { startHandTracking } from "../gesture/handTracker";
-import { Link, fetchConfig, type LinkStatus } from "../link/link";
+import {
+  attachPresenter,
+  detachPresenter,
+  ensureSession,
+  presenterLink,
+  usePresenterSession,
+} from "../link/presenterSession";
 import { FLAG_DRAW, FLAG_VISIBLE, SeqFilter, decodePointer, type ControlMessage } from "../link/protocol";
 import { StatusBadge } from "../link/StatusBadge";
 
@@ -32,19 +39,13 @@ export default function Present() {
     return (
       <div className="center-screen">
         <p>No presentation loaded.</p>
-        <RouterLink className="btn btn-primary" to="/">
+        <RouterLink className="btn btn-shimmer" to="/">
           Choose a file
         </RouterLink>
       </div>
     );
   }
   return <PresentView deck={deck} />;
-}
-
-interface Pairing {
-  url: string;
-  /** The phone cannot reach this address (e.g. localhost). */
-  unreachable: boolean;
 }
 
 /** How long the pointer stays up after the last update from its source. */
@@ -67,10 +68,12 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
   const [blank, setBlank] = useState(false);
   const [textVisible, setTextVisible] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [phonePanel, setPhonePanel] = useState(false);
-  const [pairing, setPairing] = useState<Pairing | null>(null);
-  const [pairError, setPairError] = useState<string | null>(null);
-  const [linkStatus, setLinkStatus] = useState<LinkStatus | null>(null);
+  // The QR code is normally shown on the home page, before presenting. Here
+  // it is behind a confirmation, because this screen is usually projected and
+  // anyone in the room could scan it.
+  const [phonePanel, setPhonePanel] = useState<"closed" | "confirm" | "qr">("closed");
+  const session = usePresenterSession();
+  const linkStatus = session.status;
   const [camera, setCamera] = useState<"off" | "loading" | "on" | "error">("off");
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [toast, setToast] = useState<{ key: number; action: HandAction } | null>(null);
@@ -89,7 +92,6 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const pointer = useRef<PointerLayer | null>(null);
   const draw = useRef<DrawLayer | null>(null);
-  const link = useRef<Link | null>(null);
 
   const total = pdf?.pageCount ?? 0;
 
@@ -176,9 +178,9 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
   const lastPhoneFrame = useRef(-Infinity);
 
   useEffect(() => {
-    let disposed = false;
     const seq = new SeqFilter();
     let phoneDrawing = false;
+    let lastTransport = presenterLink()?.status.transport ?? "none";
 
     const endPhoneStroke = () => {
       if (phoneDrawing) draw.current?.endStroke();
@@ -187,74 +189,56 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
 
     const sendState = () => {
       const { slide, total, blank } = state.current;
-      link.current?.sendControl({ t: "state", slide, total, blank });
+      presenterLink()?.sendControl({ t: "state", slide, total, blank });
     };
 
-    (async () => {
-      try {
-        const [{ iceServers, publicUrl }, res] = await Promise.all([fetchConfig(), fetch("/api/sessions", { method: "POST" })]);
-        if (!res.ok) throw new Error(`server returned ${res.status}`);
-        const creds: { id: string; presenterToken: string; remoteToken: string } = await res.json();
-        if (disposed) return;
-
-        const l = new Link({ sessionId: creds.id, role: "presenter", token: creds.presenterToken, iceServers });
-        link.current = l;
-        const base = publicUrl || location.origin;
-        const host = new URL(base).hostname;
-        setPairing({
-          url: `${base}/r/${creds.id}#${creds.remoteToken}`,
-          unreachable: host === "localhost" || host === "127.0.0.1" || host === "[::1]",
-        });
-
-        let lastTransport = l.status.transport;
-        l.onStatus = (s) => {
-          setLinkStatus(s);
-          if (s.transport !== lastTransport) {
-            lastTransport = s.transport;
-            seq.reset();
-            if (s.transport !== "none") sendState();
-            else {
-              pointer.current?.hide();
-              endPhoneStroke();
-            }
-          }
-        };
-        l.onPeerJoined = () => {
+    // Normally created on the home page already; this covers opening /present directly.
+    void ensureSession();
+    attachPresenter({
+      onStatus: (s) => {
+        if (s.transport !== lastTransport) {
+          lastTransport = s.transport;
           seq.reset();
-          setPhonePanel(false);
-        };
-        l.onPointer = (buf) => {
-          const f = decodePointer(buf);
-          if (!f || !seq.accept(f.seq)) return;
-          if (!(f.flags & FLAG_VISIBLE)) {
+          if (s.transport !== "none") sendState();
+          else {
             pointer.current?.hide();
             endPhoneStroke();
-            return;
           }
-          lastPhoneFrame.current = performance.now();
-          const drawing = (f.flags & FLAG_DRAW) !== 0;
-          pointer.current?.set(f.x, f.y, true, drawing);
-          if (drawing) {
-            if (phoneDrawing) draw.current?.addPoint(f.x, f.y);
-            else draw.current?.beginStroke(f.x, f.y);
-            phoneDrawing = true;
-          } else {
-            endPhoneStroke();
-          }
-        };
-        l.onControl = (m: ControlMessage) => {
-          if (m.t === "release") {
-            pointer.current?.hide();
-            endPhoneStroke();
-          } else if (m.t === "action") {
-            const a = actions.current;
-            ({ next: a.next, prev: a.prev, undo: a.undo, clear: a.clear, blank: a.blank })[m.a]?.();
-          }
-        };
-      } catch (e) {
-        if (!disposed) setPairError(`Phone pairing unavailable: ${e instanceof Error ? e.message : e}`);
-      }
-    })();
+        }
+      },
+      onPeerJoined: () => {
+        seq.reset();
+        setPhonePanel("closed");
+      },
+      onPointer: (buf) => {
+        const f = decodePointer(buf);
+        if (!f || !seq.accept(f.seq)) return;
+        if (!(f.flags & FLAG_VISIBLE)) {
+          pointer.current?.hide();
+          endPhoneStroke();
+          return;
+        }
+        lastPhoneFrame.current = performance.now();
+        const drawing = (f.flags & FLAG_DRAW) !== 0;
+        pointer.current?.set(f.x, f.y, true, drawing);
+        if (drawing) {
+          if (phoneDrawing) draw.current?.addPoint(f.x, f.y);
+          else draw.current?.beginStroke(f.x, f.y);
+          phoneDrawing = true;
+        } else {
+          endPhoneStroke();
+        }
+      },
+      onControl: (m: ControlMessage) => {
+        if (m.t === "release") {
+          pointer.current?.hide();
+          endPhoneStroke();
+        } else if (m.t === "action") {
+          const a = actions.current;
+          ({ next: a.next, prev: a.prev, undo: a.undo, clear: a.clear, blank: a.blank })[m.a]?.();
+        }
+      },
+    });
 
     // Hide a phone pointer that stopped updating (e.g. the release was lost).
     const watchdog = setInterval(() => {
@@ -265,17 +249,16 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
       }
     }, 250);
 
+    // Leaving the presentation keeps the phone paired (back on the home page).
     return () => {
-      disposed = true;
       clearInterval(watchdog);
-      link.current?.close();
-      link.current = null;
+      detachPresenter();
     };
   }, []);
 
   // Keep the phone's slide counter in sync.
   useEffect(() => {
-    link.current?.sendControl({ t: "state", slide, total, blank });
+    presenterLink()?.sendControl({ t: "state", slide, total, blank });
   }, [slide, total, blank]);
 
   // ---- hand gestures ----------------------------------------------------------------
@@ -365,7 +348,7 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
       else if (key === "c") a.clear();
       else if (key === "t") a.text();
       else if (key === "f") toggleFullscreen();
-      else if (key === "p") setPhonePanel((p) => !p);
+      else if (key === "p") setPhonePanel((p) => (p === "closed" ? "confirm" : "closed"));
       else if (key === "home") setSlide(0);
       else if (key === "end") setSlide(Math.max(0, state.current.total - 1));
       else return;
@@ -422,7 +405,7 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
         <GestureToast key={toast.key} action={toast.action} onDone={() => setToast(null)} />
       )}
 
-      <div className={`present-controls${controlsVisible || phonePanel ? " visible" : ""}`}>
+      <div className={`present-controls${controlsVisible || phonePanel !== "closed" ? " visible" : ""}`}>
         <div className="hud-top-right">
           {blank && (
             <span className="badge">
@@ -475,13 +458,13 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
           </button>
           <span className="tool-sep" />
           <button
-            className={`tool tool-wide${phonePanel ? " on" : ""}`}
-            onClick={() => setPhonePanel((p) => !p)}
-            aria-expanded={phonePanel}
+            className={`tool tool-wide${phonePanel !== "closed" ? " on" : ""}`}
+            onClick={() => setPhonePanel((p) => (p === "closed" ? "confirm" : "closed"))}
+            aria-expanded={phonePanel !== "closed"}
             title="Phone remote (P)"
           >
             <Smartphone size={18} aria-hidden="true" />
-            {connected && linkStatus ? <StatusBadge status={linkStatus} waitingFor="phone" /> : <span>Connect phone</span>}
+            {connected && linkStatus ? <StatusBadge status={linkStatus} waitingFor="phone" /> : <span>Pair phone</span>}
           </button>
           <button
             className="tool"
@@ -494,23 +477,47 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
         </div>
       </div>
 
-      {phonePanel && (
+      {phonePanel === "confirm" && (
+        <div className="phone-panel" role="alertdialog" aria-labelledby="pair-confirm-title">
+          <button className="close" onClick={() => setPhonePanel("closed")} aria-label="Close">
+            <X size={18} />
+          </button>
+          <span className="feature-icon">
+            <ShieldAlert size={20} aria-hidden="true" />
+          </span>
+          <h2 id="pair-confirm-title">Show the QR code on this screen?</h2>
+          <p className="muted small">
+            If this screen is being projected, anyone in the room could scan it and control your slides. Pairing from
+            the home page before presenting is safer.
+          </p>
+          <div className="panel-actions">
+            <button className="btn btn-quiet" onClick={() => setPhonePanel("closed")} autoFocus>
+              Cancel
+            </button>
+            <button className="btn btn-shimmer" onClick={() => setPhonePanel("qr")}>
+              Show QR code
+            </button>
+          </div>
+        </div>
+      )}
+
+      {phonePanel === "qr" && (
         <div className="phone-panel" role="dialog" aria-label="Connect phone">
-          <button className="close" onClick={() => setPhonePanel(false)} aria-label="Close">
+          <button className="close" onClick={() => setPhonePanel("closed")} aria-label="Close">
             <X size={18} />
           </button>
           <span className="feature-icon">
             <Smartphone size={20} aria-hidden="true" />
           </span>
           <h2>Use your phone as a remote</h2>
-          {pairError ? (
-            <p className="error small">{pairError}</p>
-          ) : pairing ? (
+          {session.error ? (
+            <p className="error small">{session.error}</p>
+          ) : session.pairUrl ? (
             <>
               <div className="qr">
-                <QRCodeSVG value={pairing.url} size={200} marginSize={1} />
+                <QRCodeSVG value={session.pairUrl} size={200} marginSize={1} />
               </div>
-              {pairing.unreachable && (
+              {session.unreachable && (
                 <p className="error small">
                   Your phone can't open <strong>localhost</strong>. Open this page through your computer's network
                   address or an HTTPS tunnel, or set PUBLIC_URL on the server.
@@ -520,7 +527,7 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
               <StatusBadge status={linkStatus} waitingFor="phone" />
               <details>
                 <summary className="muted small">Can't scan?</summary>
-                <input className="pair-url" readOnly value={pairing.url} onFocus={(e) => e.target.select()} />
+                <input className="pair-url" readOnly value={session.pairUrl} onFocus={(e) => e.target.select()} />
               </details>
             </>
           ) : (

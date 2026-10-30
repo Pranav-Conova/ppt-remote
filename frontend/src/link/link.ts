@@ -20,7 +20,16 @@ export interface LinkStatus {
   transport: Transport;
   /** Smoothed round-trip time in ms over the active transport. */
   rtt: number | null;
+  /** The session is over for good (presenter left, or it no longer exists). Final. */
+  ended: boolean;
 }
+
+/**
+ * WebSocket close codes from the server (backend/internal/session/peer.go).
+ * Any of these means "stop retrying".
+ */
+const CLOSE_ENDED = 4000;
+const FINAL_CLOSE_CODES = new Set([CLOSE_ENDED, 4401, 4404]);
 
 export interface LinkOptions {
   sessionId: string;
@@ -59,7 +68,7 @@ export class Link {
   /** Fired when a (new) phone/presenter connection appears on the other side. */
   onPeerJoined: () => void = () => {};
 
-  status: LinkStatus = { server: "connecting", peer: false, transport: "none", rtt: null };
+  status: LinkStatus = { server: "connecting", peer: false, transport: "none", rtt: null, ended: false };
 
   private ws: WebSocket | null = null;
   private pc: RTCPeerConnection | null = null;
@@ -80,13 +89,30 @@ export class Link {
     this.pingTimer = setInterval(() => this.ping(), PING_INTERVAL);
   }
 
-  close() {
+  close(code?: number, reason?: string) {
     this.closed = true;
     clearInterval(this.pingTimer);
     this.timers.forEach(clearTimeout);
     this.teardownP2P();
-    this.ws?.close();
+    this.ws?.close(code, reason);
     this.ws = null;
+  }
+
+  /**
+   * Presenter only: end the session for good, e.g. when the tab closes. The
+   * phone hears it directly (control channel) and from the server (close
+   * code), so it stops even if one of the two is lost.
+   */
+  endSession() {
+    this.sendControl({ t: "end" });
+    this.close(CLOSE_ENDED, "ended");
+  }
+
+  /** The other side ended the session: stop everything, never reconnect. */
+  private ended() {
+    if (this.status.ended) return;
+    this.close();
+    this.setStatus({ server: "offline", peer: false, ended: true });
   }
 
   sendPointer(buf: ArrayBuffer) {
@@ -139,8 +165,9 @@ export class Link {
       }
       this.handleSignal(msg);
     };
-    ws.onclose = () => {
+    ws.onclose = (e) => {
       if (this.ws !== ws) return;
+      if (FINAL_CLOSE_CODES.has(e.code)) return this.ended();
       this.ws = null;
       this.setStatus({ server: "offline", peer: false });
       if (this.closed) return;
@@ -166,6 +193,9 @@ export class Link {
       case "peer-left":
         this.teardownP2P();
         this.setStatus({ peer: false });
+        break;
+      case "ended":
+        this.ended();
         break;
       case "sig":
         void this.handleSig(msg);
@@ -314,6 +344,8 @@ export class Link {
       const sample = performance.now() - msg.ts;
       const prev = this.status.rtt;
       this.setStatus({ rtt: prev == null ? sample : prev * 0.7 + sample * 0.3 });
+    } else if (msg.t === "end") {
+      this.ended();
     } else {
       this.onControl(msg);
     }
@@ -343,7 +375,14 @@ export class Link {
       next.rtt = null;
     }
     const s = this.status;
-    if (s.server === next.server && s.peer === next.peer && s.transport === next.transport && s.rtt === next.rtt) return;
+    if (
+      s.server === next.server &&
+      s.peer === next.peer &&
+      s.transport === next.transport &&
+      s.rtt === next.rtt &&
+      s.ended === next.ended
+    )
+      return;
     this.status = next;
     this.onStatus(next);
   }

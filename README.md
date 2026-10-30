@@ -41,7 +41,7 @@
 **Signify** is a browser-based presentation system. Open a PDF or PowerPoint deck, go fullscreen, and control it **without a mouse or clicker**:
 
 - 🖐️ **Hand gestures**: show a finger pattern to your webcam to change slides, point, draw, or undo.
-- 📱 **Phone remote**: scan a QR code and your phone becomes a clicker with a **gyroscope laser pointer**. There is no app to install.
+- 📱 **Phone remote**: scan the QR code on the home page and your phone becomes a clicker with a **gyroscope laser pointer**. There is no app to install.
 
 Everything latency-sensitive runs **on your devices**:
 - Slides are rendered in the browser.
@@ -58,7 +58,7 @@ The Go server only serves the app, pairs devices and converts PowerPoint files.
 |---|---|---|
 | 📄 | **PDF & PowerPoint** | PDFs render locally with pdf.js and are never uploaded. PPT/PPTX/ODP files are converted to PDF on the server with LibreOffice. |
 | 🖐️ | **Hand gestures** | MediaPipe Hand Landmarker runs on the GPU inside a Web Worker. There are six actions, and each one's five-finger pattern is customizable. |
-| 📱 | **Phone remote** | Pair with a QR code. Big touch targets for Next, Prev, Pointer, Undo, Clear and Blank, plus a live slide counter. |
+| 📱 | **Phone remote** | Pair with a QR code on the home page, *before* presenting, so the code never appears on the projected screen. Closing the presenter tab stops the remote. Big touch targets for Next, Prev, Pointer, Undo, Clear and Blank, plus a live slide counter. |
 | 🔴 | **Gyro laser pointer** | Hold to point; drag down on the button to draw. Turning is measured in "player space" so it works at any holding angle, with tightening, acceleration, drift correction and soft smoothing. |
 | ✍️ | **Annotations** | Draw with your hand or your phone. Strokes are kept per slide and survive window resizes. |
 | 🎥 | **Camera overlay** | Optional mirrored picture-in-picture in any corner of the slide. |
@@ -112,9 +112,16 @@ sequenceDiagram
     S->>L: forward
     L-->>P: DataChannels open: "Direct"
     Note over L,P: Pointer and buttons now skip the server
+    L->>S: tab closed: close(4000 "ended")
+    S->>P: ended, close(4000)
+    Note over P: "Presentation ended", stops reconnecting
 ```
 
 The remote token sits in the URL **fragment**, which browsers never send to the server, so it doesn't appear in any request logs.
+
+- **Pairing happens on the home page**, which is normally not projected yet. The same connection carries on into the presentation. During a presentation, the toolbar's *Pair phone* button (or `P`) asks for confirmation before showing a QR code on the big screen, since anyone in the room could scan it.
+- **Closing or reloading the presenter tab ends the session.** The phone shows *Presentation ended* and stops. Going back to the home page from the presentation keeps the phone paired.
+- If the laptop drops off the network without closing the tab, the phone waits. After **90 s** without the presenter the session ends anyway.
 
 </details>
 
@@ -170,7 +177,7 @@ All of these can be changed on the home page. Gestures must be held for about 3 
 | `→` `Space` `PgDn` | Next | `←` `PgUp` | Previous |
 | `B` | Blank screen | `T` | Toggle text |
 | `Z` | Undo | `C` | Clear slide |
-| `F` | Fullscreen | `P` | Phone pairing |
+| `F` | Fullscreen | `P` | Show pairing QR (asks first) |
 | `Home` / `End` | First / last slide | | |
 
 ## 🚀 Quick start
@@ -201,7 +208,7 @@ Phones only allow motion sensors on **HTTPS** pages, and a phone can't reach `lo
 cloudflared tunnel --url http://localhost:5173    # or: ngrok http 5173
 ```
 
-Open the tunnel URL **on the laptop too**, so the QR code points at it. Once paired, the phone and laptop still talk directly over your Wi-Fi.
+Open the tunnel URL **on the laptop too**, so the QR code on the home page points at it. Once paired, the phone and laptop still talk directly over your Wi-Fi.
 
 ## ⚙️ Configuration
 
