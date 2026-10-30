@@ -1,9 +1,17 @@
+# Render Blueprint: New > Blueprint, pick this repo, branch v2.
 services:
   - type: web
     name: signify
     runtime: docker
     plan: free
+    branch: v2
     dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /healthz
-    # Optional env vars (see .env.example): ICE_SERVERS to add a TURN server,
-    # PUBLIC_URL to pin the address encoded in the pairing QR code.
+    autoDeploy: true
+    envVars:
+      # Optional overrides (see .env.example). Leave unset to use defaults.
+      - key: PUBLIC_URL
+        sync: false
+      - key: ICE_SERVERS
+        sync: false
