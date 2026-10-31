@@ -988,15 +988,18 @@ kbd {
   accent-color: var(--accent);
 }
 
+/* The same layout as the phone in the home page demo: a big Pointer pad,
+   Prev and Next side by side, then Undo / Clear / Blank. Pads are flat ink
+   tiles that light up green when used (orange while drawing). */
 .remote-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 2.1fr 1.4fr 0.9fr;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: 2.2fr 1fr 0.7fr;
   grid-template-areas:
-    "pointer pointer pointer"
-    "prev next next"
-    "undo clear blank";
+    "pointer pointer pointer pointer pointer pointer"
+    "prev    prev    prev    next    next    next"
+    "undo    undo    clear   clear   blank   blank";
   gap: 10px;
   min-height: 0;
   transition: opacity 0.25s;
@@ -1031,9 +1034,10 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  border-radius: 22px;
-  border: 1.5px solid var(--border);
-  background: var(--bg-elev);
+  border: 0;
+  border-radius: 20px;
+  background: var(--ink-3);
+  color: var(--cream);
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 1rem;
@@ -1041,29 +1045,27 @@ kbd {
   -webkit-tap-highlight-color: transparent;
   transition:
     transform 0.12s var(--ease-out),
-    border-color 0.15s,
     background 0.15s,
-    box-shadow 0.12s;
+    color 0.15s;
 }
 .pad:active,
 .pad.active {
   transform: scale(0.97);
-  border-color: var(--accent);
+}
+/* A tap flashes the button green, like Next in the demo. */
+.pad.tap.hit {
+  animation: pad-hit 0.35s var(--ease-out);
+}
+@keyframes pad-hit {
+  from {
+    background: var(--accent);
+    color: var(--on-brand);
+  }
 }
 .pad.prev,
 .pad.next {
   flex-direction: row;
   font-size: 1.15rem;
-}
-.pad.next {
-  background: var(--accent);
-  color: var(--on-brand);
-  border: 0;
-  font-weight: 700;
-  box-shadow: 5px 5px 0 rgba(171, 255, 132, 0.35);
-}
-.pad.next:active {
-  box-shadow: none;
 }
 .pad.small {
   font-family: var(--font-body);
@@ -1072,38 +1074,25 @@ kbd {
   color: var(--text-muted);
 }
 .pad.small svg {
-  color: var(--text);
+  color: var(--cream);
 }
 .pad.on {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--cream);
+  color: var(--ink);
 }
-.pad.hold {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(255, 59, 59, 0.2), transparent 60%),
-    var(--bg-elev);
+.pad.on svg {
+  color: var(--ink);
 }
-.pad.hold svg {
-  color: #ff8080;
-}
-.pad.hold.draw {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(255, 135, 9, 0.2), transparent 60%),
-    var(--bg-elev);
-  border-color: var(--c-orange);
-}
-.pad.hold.draw svg {
-  color: var(--c-orange);
-}
+/* Pointer pad: ink at rest, green while pointing, orange while drawing. */
 .pad.hold.active {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(255, 59, 59, 0.42), transparent 70%),
-    var(--bg-elev);
+  background: var(--accent);
+  color: var(--on-brand);
 }
 .pad.hold.draw.active {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(255, 135, 9, 0.4), transparent 70%),
-    var(--bg-elev);
+  background: var(--c-orange);
+}
+.pad.hold.active .pad-hint {
+  color: rgba(14, 16, 15, 0.7);
 }
 .pad-rings {
   position: absolute;
@@ -1121,12 +1110,8 @@ kbd {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid rgba(255, 90, 90, 0.6);
+  border: 2px solid rgba(14, 16, 15, 0.35);
   animation: ring 1.4s var(--ease-out) infinite;
-}
-.pad.draw.active .pad-rings::before,
-.pad.draw.active .pad-rings::after {
-  border-color: rgba(255, 135, 9, 0.6);
 }
 .pad.active .pad-rings::after {
   animation-delay: 0.7s;
@@ -1142,7 +1127,8 @@ kbd {
   }
 }
 .pad-label {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 .pad-hint {
   font-family: var(--font-body);

@@ -398,8 +398,14 @@ function TapButton({ children, onTap, className = "" }: { children: ReactNode; o
       className={`pad tap ${className}`}
       onPointerDown={(e) => {
         e.preventDefault();
+        // Restart the green flash even on quick repeated taps.
+        const el = e.currentTarget;
+        el.classList.remove("hit");
+        void el.offsetWidth;
+        el.classList.add("hit");
         onTap();
       }}
+      onAnimationEnd={(e) => e.currentTarget.classList.remove("hit")}
       onContextMenu={(e) => e.preventDefault()}
     >
       {children}
