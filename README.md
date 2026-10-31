@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="frontend/public/logo.png" alt="Signify" width="320" />
-
 # ✋ Signify
 
 ### Run your slides with your hands, or turn your phone into a clicker and laser pointer.
