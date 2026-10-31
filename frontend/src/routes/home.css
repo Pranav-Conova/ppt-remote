@@ -128,10 +128,10 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-rows: repeat(4, minmax(0, 1fr));
   grid-template-areas:
-    "start start start start start start pair pair pair gest gest gest"
-    "start start start start start start pair pair pair gest gest gest"
+    "start start start start start start pair pair pair demo demo demo"
+    "start start start start start start pair pair pair demo demo demo"
     "start start start start start start pair pair pair me   me   me"
-    "lat   lat   cam   cam   cam   keys keys tip  tip  me   me   me";
+    "lat   lat   cam   cam   cam   gest gest keys keys me   me   me";
 }
 /* Narrow tiles rearrange their own content (container queries). */
 .tile {
@@ -158,8 +158,8 @@
 .t-keys {
   grid-area: keys;
 }
-.t-tip {
-  grid-area: tip;
+.t-demo {
+  grid-area: demo;
 }
 
 /* ---- tile ---- */
@@ -660,57 +660,17 @@
 }
 
 /* ---- gestures tile ---- */
+/* The gestures tile is small now, so its shape sits low in the corner. */
 .w-morph {
-  width: clamp(70px, 13vh, 120px);
+  width: clamp(60px, 10vh, 96px);
   aspect-ratio: 1;
-  right: -18px;
-  top: -18px;
+  right: -20px;
+  bottom: -20px;
   z-index: -1;
-  opacity: 0.95;
-}
-.g-preview {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.9rem;
-}
-.hand.mini {
-  height: clamp(50px, 8.5vh, 78px);
-  gap: 5px;
-}
-.hand.mini .finger {
-  min-width: 14px;
-  cursor: default;
-}
-.hand.mini .finger-bar {
-  width: 13px;
-  height: calc(var(--h) * clamp(42px, 7.2vh, 68px));
-}
-.g-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  justify-self: start;
-  padding: 0.15rem 0.55rem;
-  border-radius: 6px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: var(--ink);
-  background: var(--accent);
-  box-shadow: -2px 3px 0 color-mix(in srgb, var(--accent) 40%, #000);
-  rotate: -3deg;
-  animation: label-in 0.5s var(--ease-spring);
-}
-@keyframes label-in {
-  from {
-    opacity: 0;
-    transform: scale(0.4) rotate(12deg);
-  }
+  opacity: 0.7;
 }
 
-/* ---- finger editor (shared by the preview and the sheet) ---- */
+/* ---- finger editor (gesture sheet) ---- */
 .hand {
   display: flex;
   align-items: flex-end;
@@ -876,7 +836,10 @@ button.finger:active .finger-bar {
   font-weight: 600;
 }
 .t-keys kbd {
+  display: inline-grid;
+  place-items: center;
   min-width: 1.6rem;
+  min-height: 1.4rem;
   padding: 0.12rem 0.4rem;
   color: var(--cream);
   background: var(--ink);
@@ -897,63 +860,119 @@ button.finger:active .finger-bar {
     color: var(--c-lime);
   }
 }
-.tip-row {
+/* ---- phone remote demo ---- */
+.t-demo {
+  gap: clamp(0.35rem, 0.9vh, 0.7rem);
+}
+.remote-demo {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: clamp(0.35rem, 0.9vh, 0.7rem);
 }
-.tip-row p {
-  line-height: 1.35;
+.rd-scene {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: visible;
 }
-.tip-row strong {
-  color: var(--ink);
-}
-.tip-slide {
-  width: clamp(64px, 11vh, 96px);
-  flex: none;
-}
-.tip-slide rect {
+.rd-slide {
   fill: var(--ink);
-  stroke: none;
 }
-.tip-ink {
+.rd-line,
+.rd-bar {
+  fill: rgba(255, 252, 225, 0.28);
+}
+.rd-bar.hot {
+  fill: var(--c-pink);
+}
+.rd-card {
+  fill: rgba(255, 252, 225, 0.12);
+}
+.rd-slide-2 {
+  opacity: 0;
+}
+.rd-ink {
   fill: none;
-  stroke: var(--c-lime);
-  stroke-width: 2.6;
+  stroke: var(--laser);
+  stroke-width: 3.4;
   stroke-linecap: round;
-  stroke-dasharray: 80;
-  stroke-dashoffset: 80;
-  animation: ink 4s ease-in-out infinite;
 }
-.tip-dot {
-  fill: var(--laser);
-  filter: drop-shadow(0 0 3px var(--laser));
-  offset-path: path("M22 34 C 34 18, 52 44, 72 22");
-  animation: dot 4s ease-in-out infinite;
+.rd-phone-body {
+  fill: var(--ink);
+  stroke: var(--cream);
+  stroke-width: 2;
 }
-@keyframes ink {
-  0%,
-  15% {
-    stroke-dashoffset: 80;
-  }
-  65%,
-  85% {
-    stroke-dashoffset: 0;
-  }
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
+.rd-counter,
+.rd-pad-label {
+  fill: var(--cream);
+  font-family: var(--font-display);
+  font-weight: 700;
 }
-@keyframes dot {
-  0%,
-  15% {
-    offset-distance: 0%;
-  }
-  65%,
-  100% {
-    offset-distance: 100%;
-  }
+.rd-counter {
+  font-size: 9px;
+}
+.rd-pad-label {
+  font-size: 10.5px;
+}
+.rd-glyph {
+  fill: none;
+  stroke: var(--cream);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rd-finger {
+  fill: rgba(255, 252, 225, 0.45);
+  stroke: var(--cream);
+  stroke-width: 2;
+}
+.rd-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rd-steps li {
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  font-size: 0.74rem;
+  font-weight: 700;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    scale 0.3s var(--ease-spring);
+}
+.remote-demo[data-step="1"] li:nth-child(1),
+.remote-demo[data-step="2"] li:nth-child(2),
+.remote-demo[data-step="3"] li:nth-child(3),
+.remote-demo[data-step="4"] li:nth-child(4) {
+  background: var(--ink);
+  color: var(--c-blue);
+  scale: 1.06;
+}
+
+/* Phone status next to Start presenting. */
+.phone-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1.5px dashed var(--line);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.phone-chip.on {
+  border: 1.5px solid var(--c-green);
+  background: color-mix(in srgb, var(--c-green) 14%, transparent);
+  color: var(--c-green);
 }
 
 /* ---- colour-block motion ---- */
@@ -1145,18 +1164,6 @@ button.finger:active .finger-bar {
 }
 .t-me .me-row {
   margin-top: auto;
-}
-
-/* Blocks two grid columns wide: stack instead of squeezing. */
-@container (max-width: 260px) {
-  .tip-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.45rem;
-  }
-  .t-keys .key:nth-child(n + 5) {
-    display: none;
-  }
 }
 
 /* "Hire me" in the top bar, with a live dot. */
@@ -1635,10 +1642,11 @@ button.finger:active .finger-bar {
       "start start start start pair pair"
       "start start start start pair pair"
       "start start start start pair pair"
-      "gest  gest  cam   cam   pair pair"
-      "gest  gest  cam   cam   me   me"
-      "lat   lat   tip   tip   me   me";
+      "demo  demo  gest  gest  pair pair"
+      "demo  demo  gest  gest  me   me"
+      "demo  demo  lat   lat   me   me";
   }
+  .t-cam,
   .t-keys,
   .lead,
   .pair-note {
@@ -1656,11 +1664,12 @@ button.finger:active .finger-bar {
     grid-template-rows: none;
     grid-template-areas:
       "start start"
-      "pair  me"
-      "pair  gest"
+      "demo  pair"
+      "me    gest"
       "lat   cam"
-      "keys  tip";
+      "keys  keys";
   }
+  .t-cam,
   .t-keys {
     display: flex;
   }
@@ -1678,7 +1687,7 @@ button.finger:active .finger-bar {
 @media (max-width: 600px) {
   .bh-grid {
     grid-template-columns: 1fr;
-    grid-template-areas: "start" "pair" "me" "gest" "cam" "lat" "keys" "tip";
+    grid-template-areas: "start" "demo" "pair" "me" "gest" "cam" "lat" "keys";
   }
   .hero-art {
     inset: 0 0 auto 40%;

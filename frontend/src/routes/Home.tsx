@@ -1,36 +1,34 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Camera,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Eraser,
   FileText,
   FlaskConical,
   Hand,
-  Keyboard,
   LoaderCircle,
-  MousePointer2,
+  MonitorOff,
+  QrCode,
   SlidersHorizontal,
   Smartphone,
+  Undo2,
   Upload,
   X,
   Zap,
 } from "lucide-react";
 import { convertPptx, setDeck, type LoadedDeck } from "../lib/deckStore";
-import {
-  GESTURE_LABELS,
-  duplicateGestures,
-  loadSettings,
-  saveSettings,
-  type Corner,
-  type GestureName,
-  type PresenterSettings,
-} from "../lib/settings";
+import { duplicateGestures, loadSettings, saveSettings, type Corner, type PresenterSettings } from "../lib/settings";
 import { usePresenterSession } from "../link/presenterSession";
 import { AboutSheet, SocialLinks } from "../ui/AboutSheet";
 import { Asterisk, Clover, InkShape, MORPH_SHAPES, Morpher, Ring, Squiggle, confetti } from "../ui/art";
 import { GitHubIcon } from "../ui/GitHubIcon";
-import { FINGER_HEIGHT, GESTURE_COLORS, GESTURE_ICONS, GestureSheet } from "../ui/GestureSheet";
+import { GestureSheet } from "../ui/GestureSheet";
 import { PairCard } from "../ui/PairCard";
+import { RemoteDemo } from "../ui/RemoteDemo";
 import { Switch } from "../ui/Switch";
 import { Tile } from "../ui/Tile";
 import { FULL_MOTION, fullMotion, gsap, useGSAP } from "../ui/gsap";
@@ -46,20 +44,22 @@ const CORNERS: [Corner, string][] = [
   ["br", "Bottom right"],
 ];
 
-const KEYS: [string, string][] = [
-  ["→", "Next"],
-  ["←", "Back"],
-  ["B", "Blank"],
-  ["Z", "Undo"],
-  ["F", "Full"],
-  ["P", "Pair"],
+/** The buttons on the phone remote, as shown on the Buttons tile. */
+const REMOTE_BUTTONS = [
+  { icon: ChevronLeft, label: "Prev" },
+  { icon: ChevronRight, label: "Next" },
+  { icon: Undo2, label: "Undo" },
+  { icon: Eraser, label: "Clear" },
+  { icon: MonitorOff, label: "Blank" },
 ];
 
 const MARQUEE = [
-  "Hand gestures",
-  "Phone laser pointer",
+  "Your phone is the remote",
+  "Tilt to point",
+  "Drag down to draw",
   "Pair before you present",
   "~5 ms on Wi-Fi",
+  "Hand gestures too",
   "Your file never leaves this device",
   `Made by ${ME.name}, creative developer`,
 ];
@@ -291,17 +291,19 @@ export default function Home() {
               <span className="brace-text">{"{ Signify 2.0 }"}</span>
             </span>
             <h1 className="art-title" id="start-title">
-              <span className="title-line">Present with a</span>
+              <span className="title-line">Present with</span>
               <span className="title-line">
                 <span className="sticker s-green" onPointerEnter={wiggle}>
-                  wave
+                  your phone
                 </span>{" "}
                 <span className="sticker s-pink" onPointerEnter={wiggle}>
-                  of your hand
+                  as a laser
                 </span>
               </span>
             </h1>
-            <p className="lead">Hand gestures, or your phone as a clicker and laser pointer. Nothing to install.</p>
+            <p className="lead">
+              Scan the code and your phone becomes the clicker: tilt to point, drag down to draw. Nothing to install.
+            </p>
           </div>
 
           <div
@@ -370,9 +372,10 @@ export default function Home() {
           )}
 
           <div className="t-start-row">
-            <Switch checked={settings.handGestures} onChange={(v) => setSettings((s) => ({ ...s, handGestures: v }))}>
-              Hand gestures
-            </Switch>
+            <span className={`phone-chip${paired ? " on" : ""}`} role="status">
+              {paired ? <Check size={15} aria-hidden="true" /> : <QrCode size={15} aria-hidden="true" />}
+              {paired ? "Phone connected" : "Scan the code to pair your phone"}
+            </span>
             <div className="magnet" onPointerMove={magnet} onPointerLeave={unmagnet}>
               <button
                 ref={startRef}
@@ -399,20 +402,28 @@ export default function Home() {
 
         {/* ---- phone pairing ---- */}
         <Tile accent="var(--c-green)" className="t-pair">
-          <TileHead icon={Smartphone} title="Phone remote" />
+          <TileHead icon={QrCode} title="Pair your phone" />
           <PairCard size={150} />
           <p className="small center pair-note">
             Pair here, <strong>before</strong> presenting, so the code never shows on the big screen.
           </p>
         </Tile>
 
-        {/* ---- gestures ---- */}
+        {/* ---- phone remote demo ---- */}
+        <Tile accent="var(--c-blue)" className="t-block t-demo">
+          <TileHead icon={Smartphone} title="Phone remote" />
+          <RemoteDemo />
+        </Tile>
+
+        {/* ---- hand gestures (the alternative) ---- */}
         <Tile accent="var(--c-violet)" className="t-gest">
           <span className="art-wrap w-morph" aria-hidden="true">
             <Morpher />
           </span>
-          <TileHead icon={Hand} title="Gestures" />
-          <GesturePreview gestures={settings.gestures} />
+          <TileHead icon={Hand} title="Hand gestures" />
+          <Switch checked={settings.handGestures} onChange={(v) => setSettings((s) => ({ ...s, handGestures: v }))}>
+            Use webcam
+          </Switch>
           <button className="tile-btn" onClick={() => setSheet(true)}>
             <SlidersHorizontal size={15} aria-hidden="true" /> Customize
           </button>
@@ -486,29 +497,16 @@ export default function Home() {
 
         <Tile accent="var(--c-violet)" className="t-mini t-block t-keys">
           <InkShape kind="ring" className="deco" />
-          <TileHead icon={Keyboard} title="Keys" />
+          <TileHead icon={Smartphone} title="Buttons" />
           <div className="keys">
-            {KEYS.map(([k, label], i) => (
-              <span key={k} className="key" style={{ animationDelay: `${i * 0.6}s` }}>
-                <kbd>{k}</kbd>
+            {REMOTE_BUTTONS.map(({ icon: Icon, label }, i) => (
+              <span key={label} className="key" style={{ animationDelay: `${i * 0.6}s` }}>
+                <kbd>
+                  <Icon size={13} aria-hidden="true" />
+                </kbd>
                 <span>{label}</span>
               </span>
             ))}
-          </div>
-        </Tile>
-
-        <Tile accent="var(--c-green)" className="t-mini t-block t-tip">
-          <InkShape kind="star" className="deco" />
-          <TileHead icon={MousePointer2} title="Pointer" />
-          <div className="tip-row">
-            <svg className="tip-slide" viewBox="0 0 96 54" aria-hidden="true">
-              <rect x="1" y="1" width="94" height="52" rx="6" />
-              <path className="tip-ink" d="M22 34 C 34 18, 52 44, 72 22" />
-              <circle className="tip-dot" r="3.4" />
-            </svg>
-            <p className="small">
-              <strong>Hold</strong> to point, <strong>drag down</strong> to draw
-            </p>
           </div>
         </Tile>
       </main>
@@ -529,32 +527,5 @@ function TileHead({ icon: Icon, title }: { icon: typeof Hand; title: string }) {
       </span>
       {title}
     </h2>
-  );
-}
-
-/** A small hand that cycles through the configured gestures. */
-function GesturePreview({ gestures }: { gestures: PresenterSettings["gestures"] }) {
-  const names = Object.keys(GESTURE_LABELS) as GestureName[];
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    if (!fullMotion()) return;
-    const t = setInterval(() => setI((n) => (n + 1) % names.length), 1800);
-    return () => clearInterval(t);
-  }, [names.length]);
-  const name = names[i];
-  const Icon = GESTURE_ICONS[name];
-  return (
-    <div className="g-preview" style={{ "--accent": GESTURE_COLORS[name] } as CSSProperties}>
-      <div className="hand mini" aria-hidden="true">
-        {gestures[name].map((up, f) => (
-          <span key={f} className={`finger${up ? " up" : ""}`} style={{ "--h": FINGER_HEIGHT[f] } as CSSProperties}>
-            <span className="finger-bar" />
-          </span>
-        ))}
-      </div>
-      <span className="g-label" key={name}>
-        <Icon size={14} aria-hidden="true" /> {GESTURE_LABELS[name]}
-      </span>
-    </div>
   );
 }
