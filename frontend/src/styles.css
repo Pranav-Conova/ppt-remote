@@ -25,15 +25,16 @@
   --brand-warm: linear-gradient(100deg, var(--amber), var(--orange) 70%, var(--rose));
   --on-brand: #1a0d02;
 
-  /* Full-spectrum palette (home page): every tile gets its own accent. */
-  --c-red: #ff4d6d;
-  --c-orange: #ff8a3d;
+  /* Home page palette, after gsap.com: neon blocks on ink. */
+  --c-red: #ff5a6e;
+  --c-orange: #ff8709;
   --c-yellow: #ffd23f;
-  --c-green: #3ddc97;
-  --c-cyan: #22d3ee;
-  --c-blue: #4d7cff;
-  --c-violet: #9b5cff;
-  --c-pink: #ff5cc8;
+  --c-green: #0ae448;
+  --c-lime: #abff84;
+  --c-cyan: #3fe0ff;
+  --c-blue: #00bae2;
+  --c-violet: #9d95ff;
+  --c-pink: #fec5fb;
   --spectrum: linear-gradient(
     90deg,
     var(--c-red),

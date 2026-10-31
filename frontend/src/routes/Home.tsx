@@ -26,13 +26,14 @@ import {
   type GestureName,
   type PresenterSettings,
 } from "../lib/settings";
-import { ColorField } from "../ui/ColorField";
+import { usePresenterSession } from "../link/presenterSession";
+import { Asterisk, Clover, MORPH_SHAPES, Morpher, Ring, Squiggle, confetti } from "../ui/art";
 import { GitHubIcon } from "../ui/GitHubIcon";
 import { FINGER_HEIGHT, GESTURE_COLORS, GESTURE_ICONS, GestureSheet } from "../ui/GestureSheet";
 import { PairCard } from "../ui/PairCard";
 import { Switch } from "../ui/Switch";
 import { Tile } from "../ui/Tile";
-import { FULL_MOTION, gsap, SplitText, useGSAP } from "../ui/gsap";
+import { FULL_MOTION, fullMotion, gsap, useGSAP } from "../ui/gsap";
 import "./home.css";
 
 const REPO_URL = "https://github.com/Pranav-Conova/Signify";
@@ -53,9 +54,11 @@ const KEYS: [string, string][] = [
   ["P", "Pair"],
 ];
 
+const MARQUEE = ["Hand gestures", "Phone laser pointer", "Pair before you present", "~5 ms on Wi-Fi", "Nothing to install"];
+
 /** Colour of the dropzone pulse per file type. */
 const FILE_COLORS: Record<string, string> = {
-  pdf: "var(--c-red)",
+  pdf: "var(--c-pink)",
   ppt: "var(--c-orange)",
   pptx: "var(--c-orange)",
   odp: "var(--c-blue)",
@@ -78,34 +81,95 @@ export default function Home() {
 
   const dupes = duplicateGestures(settings.gestures);
 
+  // Confetti from the QR code when the phone connects.
+  const paired = usePresenterSession().status?.peer ?? false;
+  const wasPaired = useRef(paired);
+  useEffect(() => {
+    if (paired && !wasPaired.current) confetti(root.current?.querySelector(".t-pair .pair-visual") ?? null, 34);
+    wasPaired.current = paired;
+  }, [paired]);
+
   // ---- motion ----------------------------------------------------------------
   useGSAP(
-    () => {
+    (_, contextSafe) => {
       gsap.matchMedia().add(FULL_MOTION, () => {
-        // Tiles fly in out of a blur, one after another.
-        gsap.from(".tile", {
-          y: 36,
-          scale: 0.95,
-          opacity: 0,
-          filter: "blur(14px)",
-          duration: 1.1,
-          ease: "expo.out",
-          stagger: { each: 0.07, from: "start" },
-          clearProps: "filter,transform,opacity",
+        // Entrance: tiles wipe up, stickers slap on, shapes spring in.
+        gsap
+          .timeline({ defaults: { ease: "expo.out" } })
+          .from(".tile", {
+            clipPath: "inset(100% 0% 0% 0% round 22px)",
+            y: 40,
+            duration: 1.1,
+            stagger: 0.06,
+            clearProps: "clipPath,transform",
+          })
+          .from(".bh-top > *, .marquee", { y: -20, opacity: 0, duration: 0.8, stagger: 0.06 }, 0)
+          .from(
+            ".sticker",
+            { scale: 0, rotation: () => gsap.utils.random(-30, 30), duration: 0.9, ease: "back.out(2.4)", stagger: 0.09 },
+            0.35,
+          )
+          .from(".art-wrap", { scale: 0, rotation: -120, duration: 1.4, ease: "elastic.out(1, 0.5)", stagger: 0.1 }, 0.45)
+          .to(
+            ".brace-text",
+            { duration: 1.2, scrambleText: { text: "{ Signify 2.0 }", chars: "01!<>-_/[]{}=+*^?#", speed: 0.6 } },
+            0.3,
+          );
+
+        // Always moving.
+        gsap.to(".clover", { rotation: 360, duration: 16, repeat: -1, ease: "none" });
+        gsap.to(".asterisk", { rotation: -360, duration: 9, repeat: -1, ease: "none" });
+        gsap.to(".ring", { y: -12, scale: 1.06, duration: 2.4, yoyo: true, repeat: -1, ease: "sine.inOut" });
+        gsap
+          .timeline({ repeat: -1, repeatDelay: 0.6 })
+          .fromTo(".squiggle-path", { drawSVG: "0% 0%" }, { drawSVG: "0% 100%", duration: 1.4, ease: "power2.inOut" })
+          .to(".squiggle-path", { drawSVG: "100% 100%", duration: 1.2, ease: "power2.inOut" }, "+=2.4");
+        const morph = gsap.timeline({ repeat: -1 });
+        [...MORPH_SHAPES.slice(1), MORPH_SHAPES[0]].forEach((shape) =>
+          morph.to(".morph-path", { morphSVG: shape, duration: 1.2, ease: "elastic.out(1, 0.55)" }, "+=1"),
+        );
+        gsap.to(".morpher", { rotation: 360, duration: 24, repeat: -1, ease: "none" });
+        gsap.to(".marquee-track", { xPercent: -50, duration: 30, repeat: -1, ease: "none" });
+
+        // The hero shapes drift away from the cursor at different depths.
+        const hero = root.current?.querySelector<HTMLElement>(".t-start");
+        const movers = gsap.utils.toArray<HTMLElement>(".t-start .art-wrap").map((el, i) => ({
+          x: gsap.quickTo(el, "x", { duration: 0.9, ease: "power3.out" }),
+          y: gsap.quickTo(el, "y", { duration: 0.9, ease: "power3.out" }),
+          depth: 12 + i * 9,
+        }));
+        const onMove = contextSafe!((e: PointerEvent) => {
+          const r = hero!.getBoundingClientRect();
+          const dx = (e.clientX - r.left) / r.width - 0.5;
+          const dy = (e.clientY - r.top) / r.height - 0.5;
+          movers.forEach((m) => {
+            m.x(-dx * m.depth * 2);
+            m.y(-dy * m.depth * 2);
+          });
         });
-        gsap.from(".bh-top > *", { y: -16, opacity: 0, duration: 0.8, ease: "power3.out", stagger: 0.08 });
-        // Lines, not words: word boxes would break the gradient text.
-        SplitText.create(".bh-title", {
-          type: "lines",
-          mask: "lines",
-          autoSplit: true,
-          onSplit: (self) =>
-            gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: "expo.out", stagger: 0.12, delay: 0.25 }),
-        });
+        hero?.addEventListener("pointermove", onMove);
+        return () => hero?.removeEventListener("pointermove", onMove);
       });
     },
     { scope: root },
   );
+
+  /** Stickers wiggle when you hover them. */
+  const wiggle = (e: React.PointerEvent<HTMLElement>) => {
+    if (!fullMotion() || gsap.isTweening(e.currentTarget)) return;
+    gsap.fromTo(
+      e.currentTarget,
+      { rotation: 0 },
+      { keyframes: { rotation: [-7, 6, -4, 2, 0] }, duration: 0.6, ease: "power1.inOut" },
+    );
+  };
+
+  /** The latency number scrambles on hover. */
+  const scramble = (e: React.PointerEvent<HTMLElement>) => {
+    const el = e.currentTarget.querySelector(".lat-num");
+    if (!el || !fullMotion() || gsap.isTweening(el)) return;
+    gsap.to(el, { duration: 0.8, scrambleText: { text: "5 ms", chars: "0123456789", speed: 1 } });
+  };
 
   // ---- deck -------------------------------------------------------------------
   async function pick(file: File | undefined) {
@@ -122,7 +186,7 @@ export default function Home() {
         setError("Choose a PDF or PowerPoint file.");
         return;
       }
-      pulse(FILE_COLORS[ext]);
+      celebrate(FILE_COLORS[ext]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -130,14 +194,14 @@ export default function Home() {
     }
   }
 
-  /** A loaded file makes the dropzone ring in the file type's colour. */
-  function pulse(color: string) {
+  /** A loaded file: the dropzone takes the file type's colour and throws confetti. */
+  function celebrate(color: string) {
     const el = dropRef.current;
     if (!el) return;
     el.style.setProperty("--pulse", color);
-    if (!window.matchMedia(FULL_MOTION).matches) return;
-    gsap.fromTo(el, { scale: 0.97 }, { scale: 1, duration: 0.7, ease: "elastic.out(1, 0.45)" });
-    gsap.fromTo(el, { "--ring": 0 }, { "--ring": 1, duration: 1, ease: "power2.out" });
+    if (!fullMotion()) return;
+    gsap.fromTo(el, { scale: 0.96 }, { scale: 1, duration: 0.8, ease: "elastic.out(1, 0.45)" });
+    confetti(el);
   }
 
   function start() {
@@ -151,7 +215,7 @@ export default function Home() {
   // Magnetic start button: it leans towards the cursor.
   const magnet = (e: React.PointerEvent<HTMLDivElement>) => {
     const btn = startRef.current;
-    if (!btn || btn.disabled || !window.matchMedia(FULL_MOTION).matches) return;
+    if (!btn || btn.disabled || !fullMotion()) return;
     const r = btn.getBoundingClientRect();
     gsap.to(btn, {
       x: (e.clientX - (r.left + r.width / 2)) * 0.18,
@@ -167,18 +231,30 @@ export default function Home() {
 
   return (
     <div className="bento-home" ref={root}>
-      <ColorField />
+      <div className="marquee" aria-hidden="true">
+        <div className="marquee-track">
+          {[0, 1].map((copy) => (
+            <span key={copy} className="marquee-group">
+              {MARQUEE.map((m) => (
+                <span key={m}>
+                  {m} <i>✦</i>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
 
       <header className="bh-top">
-        <span className="bh-word">
-          Signify<span className="bh-dot" aria-hidden="true" />
+        <span className="wordmark">
+          Signify<span className="wordmark-dot" aria-hidden="true" />
         </span>
         <nav className="bh-nav">
           {/* In-app navigation: a full page load would end the phone session. */}
-          <RouterLink className="icon-link" to="/lab">
-            <FlaskConical size={16} aria-hidden="true" /> Pointer Lab
+          <RouterLink className="pill-link" to="/lab">
+            <FlaskConical size={15} aria-hidden="true" /> Pointer Lab
           </RouterLink>
-          <a className="icon-link" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Signify on GitHub">
+          <a className="pill-link" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Signify on GitHub">
             <GitHubIcon />
           </a>
         </nav>
@@ -186,14 +262,38 @@ export default function Home() {
 
       <main className="bh-grid">
         {/* ---- start ---- */}
-        <Tile accent="var(--c-orange)" className="t-start beam" aria-labelledby="start-title">
+        <Tile accent="var(--c-green)" className="t-start" aria-labelledby="start-title">
+          <div className="hero-art" aria-hidden="true">
+            <span className="art-wrap w-clover">
+              <Clover />
+            </span>
+            <span className="art-wrap w-ring">
+              <Ring />
+            </span>
+            <span className="art-wrap w-asterisk">
+              <Asterisk />
+            </span>
+            <span className="art-wrap w-squiggle">
+              <Squiggle />
+            </span>
+          </div>
+
           <div className="t-start-copy">
-            <h1 className="bh-title" id="start-title">
-              Present with a <span className="spectrum-text">wave of your hand</span>
+            <span className="brace-tag">
+              <span className="brace-text">{"{ Signify 2.0 }"}</span>
+            </span>
+            <h1 className="art-title" id="start-title">
+              <span className="title-line">Present with a</span>
+              <span className="title-line">
+                <span className="sticker s-green" onPointerEnter={wiggle}>
+                  wave
+                </span>{" "}
+                <span className="sticker s-pink" onPointerEnter={wiggle}>
+                  of your hand
+                </span>
+              </span>
             </h1>
-            <p className="muted">
-              Hand gestures or your phone as a clicker and laser pointer. Runs in your browser — nothing to install.
-            </p>
+            <p className="lead">Hand gestures, or your phone as a clicker and laser pointer. Nothing to install.</p>
           </div>
 
           <div
@@ -223,7 +323,7 @@ export default function Home() {
             />
             {busy ? (
               <>
-                <LoaderCircle className="spin" size={26} aria-hidden="true" />
+                <LoaderCircle className="spin" size={24} aria-hidden="true" />
                 <p>{busy}</p>
               </>
             ) : deck ? (
@@ -246,12 +346,12 @@ export default function Home() {
             ) : (
               <>
                 <span className="drop-icon">
-                  <Upload size={20} aria-hidden="true" />
+                  <Upload size={18} aria-hidden="true" />
                 </span>
                 <p>
                   <strong>Drop your slides</strong> or click to browse
+                  <span className="muted"> · PDF, PPT, PPTX</span>
                 </p>
-                <p className="muted small">PDF, PPT or PPTX</p>
               </>
             )}
           </div>
@@ -268,11 +368,14 @@ export default function Home() {
             <div className="magnet" onPointerMove={magnet} onPointerLeave={unmagnet}>
               <button
                 ref={startRef}
-                className="btn btn-spectrum start-btn"
+                className="btn-go start-btn"
                 disabled={!deck || !!busy || dupes.length > 0}
                 onClick={start}
               >
-                Start presenting <ArrowRight size={18} aria-hidden="true" />
+                Start presenting
+                <span className="btn-go-icon">
+                  <ArrowRight size={16} aria-hidden="true" />
+                </span>
               </button>
             </div>
           </div>
@@ -290,13 +393,16 @@ export default function Home() {
         <Tile accent="var(--c-green)" className="t-pair">
           <TileHead icon={Smartphone} title="Phone remote" />
           <PairCard size={150} />
-          <p className="muted small center">
-            Pair here, before presenting, so the code never shows on the big screen.
+          <p className="small center pair-note">
+            Pair here, <strong>before</strong> presenting, so the code never shows on the big screen.
           </p>
         </Tile>
 
         {/* ---- gestures ---- */}
         <Tile accent="var(--c-violet)" className="t-gest">
+          <span className="art-wrap w-morph" aria-hidden="true">
+            <Morpher />
+          </span>
           <TileHead icon={Hand} title="Gestures" />
           <GesturePreview gestures={settings.gestures} />
           <button className="tile-btn" onClick={() => setSheet(true)}>
@@ -305,7 +411,7 @@ export default function Home() {
         </Tile>
 
         {/* ---- camera ---- */}
-        <Tile accent="var(--c-cyan)" className="t-cam">
+        <Tile accent="var(--c-blue)" className="t-cam">
           <TileHead icon={Camera} title="Camera" />
           <div className="t-cam-body">
             <Switch checked={settings.camera.visible} onChange={(v) => setCamera({ visible: v })}>
@@ -333,27 +439,20 @@ export default function Home() {
           </div>
         </Tile>
 
-        {/* ---- small facts ---- */}
-        <Tile accent="var(--c-yellow)" className="t-mini t-lat">
+        {/* ---- colour blocks ---- */}
+        <Tile accent="var(--c-orange)" className="t-mini t-block t-lat" onPointerEnter={scramble}>
           <TileHead icon={Zap} title="Latency" />
-          <div className="lat-row">
-            <strong className="lat-num">~5 ms</strong>
-            <span className="lat-bars" aria-hidden="true">
-              {Array.from({ length: 14 }, (_, i) => (
-                <span key={i} style={{ animationDelay: `${-i * 0.23}s` }} />
-              ))}
-            </span>
-          </div>
-          <p className="muted small">Phone → screen, direct over Wi-Fi</p>
+          <strong className="lat-num">5 ms</strong>
+          <p className="small">phone → screen, direct over Wi-Fi</p>
         </Tile>
 
-        <Tile accent="var(--c-blue)" className="t-mini t-priv">
+        <Tile accent="var(--c-pink)" className="t-mini t-block t-priv">
           <TileHead icon={ShieldCheck} title="Private" />
           <p className="mini-big">Your file stays here</p>
-          <p className="muted small">PDFs and camera video never leave this device</p>
+          <p className="small">PDFs and camera video never leave this device</p>
         </Tile>
 
-        <Tile accent="var(--c-pink)" className="t-mini t-keys">
+        <Tile accent="var(--c-violet)" className="t-mini t-block t-keys">
           <TileHead icon={Keyboard} title="Keys" />
           <div className="keys">
             {KEYS.map(([k, label], i) => (
@@ -365,13 +464,13 @@ export default function Home() {
           </div>
         </Tile>
 
-        <Tile accent="var(--c-red)" className="t-mini t-tip">
+        <Tile accent="var(--c-green)" className="t-mini t-block t-tip">
           <TileHead icon={MousePointer2} title="Pointer" />
           <div className="tip-row">
             <svg className="tip-slide" viewBox="0 0 96 54" aria-hidden="true">
               <rect x="1" y="1" width="94" height="52" rx="6" />
               <path className="tip-ink" d="M22 34 C 34 18, 52 44, 72 22" />
-              <circle className="tip-dot" r="3.2" />
+              <circle className="tip-dot" r="3.4" />
             </svg>
             <p className="small">
               <strong>Hold</strong> to point, <strong>drag down</strong> to draw
@@ -391,7 +490,7 @@ function TileHead({ icon: Icon, title }: { icon: typeof Hand; title: string }) {
   return (
     <h2 className="tile-head">
       <span className="tile-icon">
-        <Icon size={16} aria-hidden="true" />
+        <Icon size={15} aria-hidden="true" />
       </span>
       {title}
     </h2>
@@ -403,14 +502,14 @@ function GesturePreview({ gestures }: { gestures: PresenterSettings["gestures"] 
   const names = Object.keys(GESTURE_LABELS) as GestureName[];
   const [i, setI] = useState(0);
   useEffect(() => {
-    if (!window.matchMedia(FULL_MOTION).matches) return;
+    if (!fullMotion()) return;
     const t = setInterval(() => setI((n) => (n + 1) % names.length), 1800);
     return () => clearInterval(t);
   }, [names.length]);
   const name = names[i];
   const Icon = GESTURE_ICONS[name];
   return (
-    <div className="g-preview" style={{ "--accent": GESTURE_COLORS[name] } as CSSProperties} aria-live="off">
+    <div className="g-preview" style={{ "--accent": GESTURE_COLORS[name] } as CSSProperties}>
       <div className="hand mini" aria-hidden="true">
         {gestures[name].map((up, f) => (
           <span key={f} className={`finger${up ? " up" : ""}`} style={{ "--h": FINGER_HEIGHT[f] } as CSSProperties}>
