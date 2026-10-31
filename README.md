@@ -7,6 +7,9 @@
 Open a PDF or PowerPoint deck in the browser. Change slides, point and draw with **hand gestures** in front of your webcam.<br>
 Or scan a QR code and your phone becomes a **gyroscope laser pointer**. No app, no clicker, no install.
 
+### 👉 [Try it live: signify-4kql.onrender.com](https://signify-4kql.onrender.com/)
+
+[![Live demo](https://img.shields.io/badge/live%20demo-signify--4kql.onrender.com-46E3B7?logo=render&logoColor=white)](https://signify-4kql.onrender.com/)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -16,7 +19,7 @@ Or scan a QR code and your phone becomes a **gyroscope laser pointer**. No app, 
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)](#-contributing)
 [![GitHub stars](https://img.shields.io/github/stars/Pranav-Conova/Signify?style=social)](https://github.com/Pranav-Conova/Signify/stargazers)
 
-[**Quick start**](#-quick-start) · [**What it does**](#-what-it-does) · [**Controls**](#-controls) · [**How it works**](#%EF%B8%8F-how-it-works) · [**Deploy**](#%EF%B8%8F-deploy) · [**Roadmap**](#%EF%B8%8F-roadmap) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
+[**Live demo**](https://signify-4kql.onrender.com/) · [**Quick start**](#-quick-start) · [**What it does**](#-what-it-does) · [**Controls**](#-controls) · [**How it works**](#%EF%B8%8F-how-it-works) · [**Deploy**](#%EF%B8%8F-deploy) · [**Roadmap**](#%EF%B8%8F-roadmap) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
 
 <br>
 
@@ -40,6 +43,12 @@ Every presenter knows the routine: walk back to the laptop to change slides, bor
 It is the difference between *"next slide, please"* and just moving on.
 
 ## ⚡ Quick start
+
+**Just want to try it?** Open **[signify-4kql.onrender.com](https://signify-4kql.onrender.com/)** on your laptop, drop in a deck, and scan the QR code with your phone. Nothing to install.
+
+> It runs on Render's free tier, so the first visit after a quiet spell can take 30–50 s to wake up.
+
+To run it yourself:
 
 **Prerequisites:** [Go 1.25+](https://go.dev/dl/) and [Node.js 22+](https://nodejs.org). [LibreOffice](https://www.libreoffice.org) is optional and only needed for PowerPoint files.
 
