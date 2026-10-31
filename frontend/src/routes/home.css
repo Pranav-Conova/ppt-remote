@@ -131,7 +131,7 @@
     "start start start start start start pair pair pair demo demo demo"
     "start start start start start start pair pair pair demo demo demo"
     "start start start start start start pair pair pair me   me   me"
-    "lat   lat   cam   cam   cam   gest gest keys keys me   me   me";
+    "lat   lat   cam   cam   cam   cam  cam  keys keys me   me   me";
 }
 /* Narrow tiles rearrange their own content (container queries). */
 .tile {
@@ -142,9 +142,6 @@
 }
 .t-pair {
   grid-area: pair;
-}
-.t-gest {
-  grid-area: gest;
 }
 .t-cam {
   grid-area: cam;
@@ -383,16 +380,6 @@
 }
 .t-start-row .switch {
   min-height: 0;
-}
-.bento-home .switch-track {
-  background: var(--ink-3);
-  border-color: var(--line);
-}
-.bento-home .switch input:checked + .switch-track {
-  background: var(--c-green);
-}
-.bento-home .switch input:focus-visible + .switch-track {
-  outline-color: var(--c-green);
 }
 .magnet {
   padding: 10px;
@@ -659,8 +646,8 @@
   }
 }
 
-/* ---- gestures tile ---- */
-/* The gestures tile is small now, so its shape sits low in the corner. */
+/* ---- webcam tile ---- */
+/* The morphing shape sits low in the corner, behind the camera picker. */
 .w-morph {
   width: clamp(60px, 10vh, 96px);
   aspect-ratio: 1;
@@ -724,18 +711,46 @@ button.finger:active .finger-bar {
   color: var(--accent);
 }
 
-/* ---- camera tile ---- */
+/* Webcam tile: title and Gestures button on top, the two toggles next to
+   the camera position picker. */
+.t-cam-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.t-cam-head .tile-btn {
+  margin: 0;
+  min-height: 32px;
+  padding: 0 0.8rem;
+  font-size: 0.82rem;
+}
 .t-cam-body {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr minmax(0, 1.05fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.9rem;
+}
+/* The picker takes the row's height (never more), so a short tile can't be
+   pushed open by it. */
+.t-cam .mini-screen {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  justify-self: end;
+}
+.t-cam-toggles {
+  display: grid;
+  gap: clamp(0.3rem, 1vh, 0.6rem);
 }
 .t-cam .switch {
   min-height: 0;
-  font-size: 0.92rem;
+  padding: 0;
+  align-items: center;
+  font-size: 0.9rem;
 }
 .mini-screen {
   position: relative;
@@ -1642,11 +1657,10 @@ button.finger:active .finger-bar {
       "start start start start pair pair"
       "start start start start pair pair"
       "start start start start pair pair"
-      "demo  demo  gest  gest  pair pair"
-      "demo  demo  gest  gest  me   me"
+      "demo  demo  cam   cam   pair pair"
+      "demo  demo  cam   cam   me   me"
       "demo  demo  lat   lat   me   me";
   }
-  .t-cam,
   .t-keys,
   .lead,
   .pair-note {
@@ -1665,11 +1679,9 @@ button.finger:active .finger-bar {
     grid-template-areas:
       "start start"
       "demo  pair"
-      "me    gest"
-      "lat   cam"
-      "keys  keys";
+      "me    cam"
+      "lat   keys";
   }
-  .t-cam,
   .t-keys {
     display: flex;
   }
@@ -1687,7 +1699,7 @@ button.finger:active .finger-bar {
 @media (max-width: 600px) {
   .bh-grid {
     grid-template-columns: 1fr;
-    grid-template-areas: "start" "demo" "pair" "me" "gest" "cam" "lat" "keys";
+    grid-template-areas: "start" "demo" "pair" "me" "cam" "lat" "keys";
   }
   .hero-art {
     inset: 0 0 auto 40%;

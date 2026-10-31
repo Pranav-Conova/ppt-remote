@@ -9,7 +9,6 @@ import {
   Eraser,
   FileText,
   FlaskConical,
-  Hand,
   LoaderCircle,
   MonitorOff,
   QrCode,
@@ -19,6 +18,7 @@ import {
   Upload,
   X,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { convertPptx, setDeck, type LoadedDeck } from "../lib/deckStore";
 import { duplicateGestures, loadSettings, saveSettings, type Corner, type PresenterSettings } from "../lib/settings";
@@ -415,27 +415,29 @@ export default function Home() {
           <RemoteDemo />
         </Tile>
 
-        {/* ---- hand gestures (the alternative) ---- */}
-        <Tile accent="var(--c-violet)" className="t-gest">
+        {/* ---- webcam: hand gestures (the alternative) and the camera bubble ---- */}
+        <Tile accent="var(--c-violet)" className="t-cam">
           <span className="art-wrap w-morph" aria-hidden="true">
             <Morpher />
           </span>
-          <TileHead icon={Hand} title="Hand gestures" />
-          <Switch checked={settings.handGestures} onChange={(v) => setSettings((s) => ({ ...s, handGestures: v }))}>
-            Use webcam
-          </Switch>
-          <button className="tile-btn" onClick={() => setSheet(true)}>
-            <SlidersHorizontal size={15} aria-hidden="true" /> Customize
-          </button>
-        </Tile>
-
-        {/* ---- camera ---- */}
-        <Tile accent="var(--c-blue)" className="t-cam">
-          <TileHead icon={Camera} title="Camera" />
+          <div className="t-cam-head">
+            <TileHead icon={Camera} title="Webcam" />
+            <button className="tile-btn" onClick={() => setSheet(true)}>
+              <SlidersHorizontal size={15} aria-hidden="true" /> Gestures
+            </button>
+          </div>
           <div className="t-cam-body">
-            <Switch checked={settings.camera.visible} onChange={(v) => setCamera({ visible: v })}>
-              Show on slides
-            </Switch>
+            <div className="t-cam-toggles">
+              <Switch
+                checked={settings.handGestures}
+                onChange={(v) => setSettings((s) => ({ ...s, handGestures: v }))}
+              >
+                Hand gestures
+              </Switch>
+              <Switch checked={settings.camera.visible} onChange={(v) => setCamera({ visible: v })}>
+                Show me on slides
+              </Switch>
+            </div>
             <div
               className={`mini-screen${settings.camera.visible ? "" : " disabled"}`}
               role="radiogroup"
@@ -474,7 +476,12 @@ export default function Home() {
           <p className="small">phone → screen, direct over Wi-Fi</p>
         </Tile>
 
-        <Tile accent="var(--c-pink)" className="t-mini t-block t-me">
+        {/* The whole tile opens the About sheet; its links and buttons keep their own jobs. */}
+        <Tile
+          accent="var(--c-pink)"
+          className="t-mini t-block t-me"
+          onClick={(e) => !(e.target as Element).closest("a, button") && setAbout(true)}
+        >
           <InkShape kind="clover" className="deco" />
           <div className="me-top">
             <span className="me-avatar" aria-hidden="true">
@@ -519,7 +526,7 @@ export default function Home() {
   );
 }
 
-function TileHead({ icon: Icon, title }: { icon: typeof Hand; title: string }) {
+function TileHead({ icon: Icon, title }: { icon: LucideIcon; title: string }) {
   return (
     <h2 className="tile-head">
       <span className="tile-icon">

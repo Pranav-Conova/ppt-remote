@@ -419,6 +419,8 @@ kbd {
 }
 
 /* ---- form controls ----------------------------------------------------------- */
+/* Toggle in the sticker style: an outlined pill that says OFF, turning
+   into a solid green pill that says ON, with a hard offset shadow. */
 .switch {
   display: flex;
   align-items: flex-start;
@@ -436,31 +438,63 @@ kbd {
 .switch-track {
   position: relative;
   flex: none;
-  width: 42px;
-  height: 24px;
-  margin-top: 1px;
+  width: 58px;
+  height: 28px;
   border-radius: 999px;
-  background: var(--surface-3);
-  border: 1px solid var(--border-strong);
-  transition: background 0.25s;
+  border: 2px solid var(--text-subtle);
+  background: transparent;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+.switch-track::before {
+  content: "OFF";
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  translate: 0 -50%;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-subtle);
 }
 .switch-thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 3px;
+  left: 3px;
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  transition: transform 0.3s var(--ease-spring);
+  background: var(--text-subtle);
+  transition:
+    transform 0.35s var(--ease-spring),
+    background 0.25s;
+}
+.switch:hover .switch-track {
+  border-color: var(--text);
+}
+.switch:hover .switch-thumb {
+  background: var(--text);
 }
 .switch input:checked + .switch-track {
   background: var(--accent);
-  border-color: transparent;
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--accent) 40%, #000);
+}
+.switch input:checked + .switch-track::before {
+  content: "ON";
+  right: auto;
+  left: 8px;
+  color: var(--on-brand);
 }
 .switch input:checked + .switch-track .switch-thumb {
-  transform: translateX(18px);
+  transform: translateX(30px);
+  background: var(--on-brand);
+}
+.switch:active .switch-thumb {
+  scale: 0.85;
 }
 .switch input:focus-visible + .switch-track {
   outline: 2px solid var(--accent);
@@ -469,7 +503,8 @@ kbd {
 .switch-text {
   display: grid;
   gap: 0.1rem;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 600;
 }
 .switch-hint {
   font-size: 0.82rem;
