@@ -110,6 +110,31 @@ export function Morpher({ className = "" }: ShapeProps) {
   );
 }
 
+/** Flat one-colour shapes (currentColor) that sit behind the colour blocks. */
+export function InkShape({ kind, className = "" }: { kind: "ring" | "asterisk" | "clover" | "star"; className?: string }) {
+  return (
+    <svg className={`ink-shape ${className}`} viewBox="0 0 100 100" aria-hidden="true">
+      {kind === "ring" && <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" strokeWidth="18" />}
+      {kind === "asterisk" && (
+        <g stroke="currentColor" strokeWidth="13" strokeLinecap="round">
+          {[0, 45, 90, 135].map((a) => (
+            <line key={a} x1="50" y1="8" x2="50" y2="92" transform={`rotate(${a} 50 50)`} />
+          ))}
+        </g>
+      )}
+      {kind === "clover" && (
+        <g fill="currentColor">
+          <circle cx="29" cy="29" r="25" />
+          <circle cx="71" cy="29" r="25" />
+          <circle cx="29" cy="71" r="25" />
+          <circle cx="71" cy="71" r="25" />
+        </g>
+      )}
+      {kind === "star" && <path d={MORPH_SHAPES[1]} fill="currentColor" />}
+    </svg>
+  );
+}
+
 const CONFETTI_COLORS = ["#0ae448", "#abff84", "#fec5fb", "#f472d0", "#ff8709", "#9d95ff", "#00bae2", "#fffce1"];
 
 /**

@@ -9,7 +9,6 @@ import {
   Keyboard,
   LoaderCircle,
   MousePointer2,
-  ShieldCheck,
   SlidersHorizontal,
   Smartphone,
   Upload,
@@ -27,13 +26,15 @@ import {
   type PresenterSettings,
 } from "../lib/settings";
 import { usePresenterSession } from "../link/presenterSession";
-import { Asterisk, Clover, MORPH_SHAPES, Morpher, Ring, Squiggle, confetti } from "../ui/art";
+import { AboutSheet, SocialLinks } from "../ui/AboutSheet";
+import { Asterisk, Clover, InkShape, MORPH_SHAPES, Morpher, Ring, Squiggle, confetti } from "../ui/art";
 import { GitHubIcon } from "../ui/GitHubIcon";
 import { FINGER_HEIGHT, GESTURE_COLORS, GESTURE_ICONS, GestureSheet } from "../ui/GestureSheet";
 import { PairCard } from "../ui/PairCard";
 import { Switch } from "../ui/Switch";
 import { Tile } from "../ui/Tile";
 import { FULL_MOTION, fullMotion, gsap, useGSAP } from "../ui/gsap";
+import { ME } from "../ui/me";
 import "./home.css";
 
 const REPO_URL = "https://github.com/Pranav-Conova/Signify";
@@ -54,7 +55,17 @@ const KEYS: [string, string][] = [
   ["P", "Pair"],
 ];
 
-const MARQUEE = ["Hand gestures", "Phone laser pointer", "Pair before you present", "~5 ms on Wi-Fi", "Nothing to install"];
+const MARQUEE = [
+  "Hand gestures",
+  "Phone laser pointer",
+  "Pair before you present",
+  "~5 ms on Wi-Fi",
+  "Your file never leaves this device",
+  `Made by ${ME.name}, creative developer`,
+];
+
+/** A heartbeat for the latency tile, drawn twice so it can scroll forever. */
+const PULSE = "M0 24 H40 L48 24 L54 8 L62 36 L68 20 L74 24 H120 L126 24 L131 14 L137 30 L142 24 H200";
 
 /** Colour of the dropzone pulse per file type. */
 const FILE_COLORS: Record<string, string> = {
@@ -75,6 +86,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [sheet, setSheet] = useState(false);
+  const [about, setAbout] = useState(false);
   const [settings, setSettings] = useState<PresenterSettings>(loadSettings);
 
   useEffect(() => saveSettings(settings), [settings]);
@@ -164,13 +176,6 @@ export default function Home() {
     );
   };
 
-  /** The latency number scrambles on hover. */
-  const scramble = (e: React.PointerEvent<HTMLElement>) => {
-    const el = e.currentTarget.querySelector(".lat-num");
-    if (!el || !fullMotion() || gsap.isTweening(el)) return;
-    gsap.to(el, { duration: 0.8, scrambleText: { text: "5 ms", chars: "0123456789", speed: 1 } });
-  };
-
   // ---- deck -------------------------------------------------------------------
   async function pick(file: File | undefined) {
     if (!file) return;
@@ -250,8 +255,11 @@ export default function Home() {
           Signify<span className="wordmark-dot" aria-hidden="true" />
         </span>
         <nav className="bh-nav">
+          <button className="pill-link hire" onClick={() => setAbout(true)}>
+            <span className="avail-dot" aria-hidden="true" /> Hire me
+          </button>
           {/* In-app navigation: a full page load would end the phone session. */}
-          <RouterLink className="pill-link" to="/lab">
+          <RouterLink className="pill-link nav-lab" to="/lab">
             <FlaskConical size={15} aria-hidden="true" /> Pointer Lab
           </RouterLink>
           <a className="pill-link" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Signify on GitHub">
@@ -440,19 +448,43 @@ export default function Home() {
         </Tile>
 
         {/* ---- colour blocks ---- */}
-        <Tile accent="var(--c-orange)" className="t-mini t-block t-lat" onPointerEnter={scramble}>
+        <Tile accent="var(--c-orange)" className="t-mini t-block t-lat">
+          <InkShape kind="asterisk" className="deco" />
           <TileHead icon={Zap} title="Latency" />
-          <strong className="lat-num">5 ms</strong>
+          <div className="lat-row">
+            <strong className="lat-num">5 ms</strong>
+            <svg className="pulse-line" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
+              <g className="pulse-track">
+                <path d={PULSE} />
+                <path d={PULSE} transform="translate(200 0)" />
+              </g>
+            </svg>
+          </div>
           <p className="small">phone → screen, direct over Wi-Fi</p>
         </Tile>
 
-        <Tile accent="var(--c-pink)" className="t-mini t-block t-priv">
-          <TileHead icon={ShieldCheck} title="Private" />
-          <p className="mini-big">Your file stays here</p>
-          <p className="small">PDFs and camera video never leave this device</p>
+        <Tile accent="var(--c-pink)" className="t-mini t-block t-me">
+          <InkShape kind="clover" className="deco" />
+          <div className="me-top">
+            <span className="me-avatar" aria-hidden="true">
+              {ME.initials}
+            </span>
+            <span className="me-name">
+              <strong>{ME.name}</strong>
+              <span>{ME.role}</span>
+            </span>
+          </div>
+          <p className="mini-big">Want a site like this?</p>
+          <div className="me-row">
+            <SocialLinks size={15} />
+            <button className="me-cta" onClick={() => setAbout(true)}>
+              Let's talk <ArrowRight size={15} aria-hidden="true" />
+            </button>
+          </div>
         </Tile>
 
         <Tile accent="var(--c-violet)" className="t-mini t-block t-keys">
+          <InkShape kind="ring" className="deco" />
           <TileHead icon={Keyboard} title="Keys" />
           <div className="keys">
             {KEYS.map(([k, label], i) => (
@@ -465,6 +497,7 @@ export default function Home() {
         </Tile>
 
         <Tile accent="var(--c-green)" className="t-mini t-block t-tip">
+          <InkShape kind="star" className="deco" />
           <TileHead icon={MousePointer2} title="Pointer" />
           <div className="tip-row">
             <svg className="tip-slide" viewBox="0 0 96 54" aria-hidden="true">
@@ -482,6 +515,7 @@ export default function Home() {
       {sheet && (
         <GestureSheet settings={settings} setSettings={setSettings} dupes={dupes} onClose={() => setSheet(false)} />
       )}
+      {about && <AboutSheet onClose={() => setAbout(false)} />}
     </div>
   );
 }
