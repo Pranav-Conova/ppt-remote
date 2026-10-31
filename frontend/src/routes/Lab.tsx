@@ -1,10 +1,18 @@
 // Pointer Lab: a guided recording of phone motion data. Each step asks for a
 // specific movement, so the data comes labelled with what the user intended.
 // The upload returns an ID that can be shared for analysis.
-import { useEffect, useRef, useState } from "react";
-import { Check, CircleDot, Copy, Download, FlaskConical, ShieldAlert, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Link as RouterLink } from "react-router-dom";
+import { ArrowLeft, Check, CircleDot, Copy, Download, RotateCcw, ShieldAlert, Upload } from "lucide-react";
 import { GyroPointer, loadGyroSettings, motionSupported, requestMotionPermission } from "../remote/gyro";
 import { MotionRecorder } from "../remote/recorder";
+import { Asterisk, Clover, Ring } from "../ui/art";
+import { FULL_MOTION, gsap, useGSAP } from "../ui/gsap";
+import { Tile } from "../ui/Tile";
+// The home page's pieces (marquee, wordmark, stickers, tiles, buttons) give
+// the Lab the same look; lab.css only lays them out.
+import "./home.css";
+import "./lab.css";
 
 interface Step {
   id: string;
@@ -24,6 +32,34 @@ const STEPS: Step[] = [
   { id: "free", title: "Point naturally", detail: "Point at things the way you would in a real talk.", seconds: 10 },
 ];
 const READY_MS = 2200;
+
+/** Each step gets its own sticker colour; the progress bar uses the same. */
+const STEP_COLORS = [
+  "--c-green",
+  "--c-pink",
+  "--c-orange",
+  "--c-violet",
+  "--c-blue",
+  "--c-lime",
+  "--c-yellow",
+  "--c-green",
+];
+const color = (i: number) => `var(${STEP_COLORS[i % STEP_COLORS.length]})`;
+
+const HOW = [
+  { text: "Stand in front of your laptop or a wall, as if presenting", color: "var(--c-orange)" },
+  { text: "Hold the phone the way you normally point", color: "var(--c-violet)" },
+  { text: "Follow each step until its bar fills up", color: "var(--c-blue)" },
+];
+
+const MARQUEE = [
+  "Pointer Lab",
+  "Hold still",
+  "Turn slowly",
+  "Draw a big circle",
+  "About 1 minute",
+  "Helps tune the laser",
+];
 
 const HOLD_STYLES = ["Flat, like a TV remote", "Tilted up about 45°", "Upright, screen facing me", "Something else"];
 const ISSUES = [
@@ -57,6 +93,7 @@ export default function Lab() {
   const dotRef = useRef<HTMLDivElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const settings = useRef(loadGyroSettings());
+  const root = useRef<HTMLDivElement>(null);
 
   useEffect(
     () => () => {
@@ -160,158 +197,264 @@ export default function Lab() {
 
   const step = STEPS[stepIndex];
   const insecure = !window.isSecureContext;
+  // Which screen is up; the two recording phases share one.
+  const screen = phase === "ready" || phase === "rec" ? "rec" : phase === "uploading" ? "notes" : phase;
+
+  // Same motion as the home page: cards wipe up, stickers slap on, shapes
+  // keep turning. Runs again whenever the screen changes.
+  useGSAP(
+    () => {
+      gsap.matchMedia().add(FULL_MOTION, () => {
+        gsap
+          .timeline({ defaults: { ease: "expo.out" } })
+          .from(".lab-main > *", {
+            clipPath: "inset(100% 0% 0% 0% round 22px)",
+            y: 30,
+            duration: 0.9,
+            stagger: 0.07,
+            clearProps: "clipPath,transform",
+          })
+          .from(
+            ".lab-main .sticker:not(.lab-step)",
+            { scale: 0, rotation: -20, duration: 0.8, ease: "back.out(2.4)", stagger: 0.08 },
+            0.25,
+          );
+        gsap.to(".lab .clover", { rotation: 360, duration: 16, repeat: -1, ease: "none" });
+        gsap.to(".lab .asterisk", { rotation: -360, duration: 9, repeat: -1, ease: "none" });
+        gsap.to(".lab .ring", { y: -8, duration: 2.2, yoyo: true, repeat: -1, ease: "sine.inOut" });
+        gsap.to(".lab .marquee-track", { xPercent: -50, duration: 30, repeat: -1, ease: "none" });
+      });
+    },
+    { scope: root, dependencies: [screen], revertOnUpdate: true },
+  );
+
+  function reset() {
+    setPhase("intro");
+    setIssues([]);
+    setNotes("");
+    setResultId(null);
+    setCopied(false);
+  }
 
   return (
-    <div className="lab">
-      <header className="lab-head">
-        <span className="feature-icon small">
-          <FlaskConical size={16} aria-hidden="true" />
-        </span>
-        <h1>Pointer Lab</h1>
+    <div className="lab" ref={root}>
+      <div className="marquee" aria-hidden="true">
+        <div className="marquee-track">
+          {[0, 1].map((copy) => (
+            <span key={copy} className="marquee-group">
+              {MARQUEE.map((m) => (
+                <span key={m}>
+                  {m} <i>✦</i>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <header className="lab-top">
+        {/* In-app links: a full page load would end a paired phone session. */}
+        <RouterLink className="wordmark" to="/">
+          Signify
+          <span className="wordmark-dot" aria-hidden="true" />
+        </RouterLink>
+        <RouterLink className="pill-link" to="/">
+          <ArrowLeft size={15} aria-hidden="true" /> Home
+        </RouterLink>
       </header>
 
-      {phase === "intro" && (
-        <section className="lab-body">
-          <p>
-            This records how your phone's motion sensors behave while you do a few guided moves. The data helps
-            fix and tune the laser pointer for your phone. It takes about <strong>1 minute</strong>.
-          </p>
-          <ol className="lab-list">
-            <li>Stand in front of your laptop or a wall, as if presenting.</li>
-            <li>Hold the phone the way you normally would to point.</li>
-            <li>Follow each instruction until the bar fills up.</li>
-          </ol>
-          <fieldset className="lab-choice">
-            <legend>How do you hold the phone when pointing?</legend>
-            {HOLD_STYLES.map((s) => (
-              <label key={s} className={`chip${holdStyle === s ? " on" : ""}`}>
-                <input type="radio" name="hold" checked={holdStyle === s} onChange={() => setHoldStyle(s)} />
-                {s}
-              </label>
-            ))}
-          </fieldset>
-          {(insecure || !motionSupported()) && (
-            <p className="notice">
-              <ShieldAlert size={16} aria-hidden="true" />
-              {insecure ? "Open this page over HTTPS to read motion sensors." : "This browser has no motion sensors."}
-            </p>
-          )}
-          {error && <p className="error small">{error}</p>}
-          <button className="btn btn-shimmer" onClick={start} disabled={insecure || !motionSupported()}>
-            <CircleDot size={18} aria-hidden="true" /> Start recording
-          </button>
-        </section>
-      )}
+      <main className="lab-main">
+        {screen === "intro" && (
+          <>
+            <Tile accent="var(--c-green)" className="lab-hero">
+              <div className="lab-art" aria-hidden="true">
+                <span className="art-wrap la-clover">
+                  <Clover />
+                </span>
+                <span className="art-wrap la-asterisk">
+                  <Asterisk />
+                </span>
+                <span className="art-wrap la-ring">
+                  <Ring />
+                </span>
+              </div>
+              <span className="brace-tag">{"{ Pointer Lab }"}</span>
+              <h1 className="art-title lab-title">
+                <span className="title-line">Tune the laser</span>
+                <span className="title-line">
+                  <span className="sticker s-green">for your</span> <span className="sticker s-pink">phone</span>
+                </span>
+              </h1>
+              <p className="lab-intro">
+                About <strong>1 minute</strong> of guided moves records how your phone's motion sensors behave. The data
+                helps fix and tune the laser pointer for your phone.
+              </p>
+            </Tile>
 
-      {(phase === "ready" || phase === "rec") && (
-        <section className="lab-body">
-          <div className="lab-progress" aria-hidden="true">
-            {STEPS.map((s, i) => (
-              <span key={s.id} className={i < stepIndex ? "done" : i === stepIndex ? "now" : ""} />
-            ))}
-          </div>
-          <p className="eyebrow">
-            Step {stepIndex + 1} of {STEPS.length} · {phase === "ready" ? "get ready" : "recording"}
-          </p>
-          <h2 className={`lab-step${phase === "rec" ? " live" : ""}`}>{step.title}</h2>
-          <p className="muted">{step.detail}</p>
-          <div className="lab-bar">
-            <span
-              key={`${step.id}-${phase}`}
-              className={phase}
-              style={{ animationDuration: `${phase === "ready" ? READY_MS : step.seconds * 1000}ms` }}
-            />
-          </div>
-          <div className="lab-preview" aria-label="Where the current algorithm puts the pointer">
-            <div className="lab-dot-track" ref={dotRef}>
-              <span className="lab-dot" />
-            </div>
-          </div>
-          <p className="lab-readout">
-            α {readout.a.toFixed(1)} · β {readout.b.toFixed(1)} · γ {readout.g.toFixed(1)} °/s · {readout.n} samples
-          </p>
-        </section>
-      )}
+            <ol className="lab-how">
+              {HOW.map((h, i) => (
+                <li key={h.text} style={{ "--s": h.color } as CSSProperties}>
+                  <span className="lab-how-n">{i + 1}</span>
+                  {h.text}
+                </li>
+              ))}
+            </ol>
 
-      {(phase === "notes" || phase === "uploading") && (
-        <section className="lab-body">
-          <h2>How did the pointer feel?</h2>
-          <p className="muted small">Pick everything that applies. This tells the analysis what to look for.</p>
-          <div className="lab-choice">
-            {ISSUES.map((s) => (
-              <label key={s} className={`chip${issues.includes(s) ? " on" : ""}`}>
-                <input
-                  type="checkbox"
-                  checked={issues.includes(s)}
-                  onChange={(e) => setIssues((l) => (e.target.checked ? [...l, s] : l.filter((x) => x !== s)))}
+            <Tile accent="var(--c-violet)" className="lab-card">
+              <fieldset className="lab-choice">
+                <legend>How do you hold the phone when pointing?</legend>
+                {HOLD_STYLES.map((s) => (
+                  <label key={s} className={`chip${holdStyle === s ? " on" : ""}`}>
+                    <input type="radio" name="hold" checked={holdStyle === s} onChange={() => setHoldStyle(s)} />
+                    {s}
+                  </label>
+                ))}
+              </fieldset>
+            </Tile>
+
+            {(insecure || !motionSupported()) && (
+              <p className="notice">
+                <ShieldAlert size={16} aria-hidden="true" />
+                {insecure ? "Open this page over HTTPS to read motion sensors." : "This browser has no motion sensors."}
+              </p>
+            )}
+            {error && <p className="error small">{error}</p>}
+            <button className="btn-go lab-cta" onClick={start} disabled={insecure || !motionSupported()}>
+              Start recording
+              <span className="btn-go-icon">
+                <CircleDot size={18} aria-hidden="true" />
+              </span>
+            </button>
+          </>
+        )}
+
+        {screen === "rec" && (
+          <Tile accent={color(stepIndex)} className="lab-rec" style={{ "--s": color(stepIndex) } as CSSProperties}>
+            <div className="lab-progress" aria-hidden="true">
+              {STEPS.map((s, i) => (
+                <span
+                  key={s.id}
+                  className={i < stepIndex ? "done" : i === stepIndex ? "now" : ""}
+                  style={{ "--s": color(i) } as CSSProperties}
                 />
-                {s}
-              </label>
-            ))}
-          </div>
-          <label className="field">
-            <span className="field-label">Describe the problem in your own words</span>
-            <textarea
-              rows={4}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. when I turn right the dot goes up, and it keeps sliding left when I stop"
-            />
-          </label>
-          <label className="field">
-            <span className="field-label">Phone model (optional)</span>
-            <input type="text" value={phoneModel} onChange={(e) => setPhoneModel(e.target.value)} placeholder="e.g. Pixel 8, iPhone 13" />
-          </label>
-          {error && (
-            <p className="error small" role="alert">
-              {error}. You can still download the data file and send it directly.
+              ))}
+            </div>
+            <p className="lab-status">
+              <span className="brace-tag">{`{ Step ${stepIndex + 1} of ${STEPS.length} }`}</span>
+              <span className={`lab-rec-dot${phase === "rec" ? " on" : ""}`}>
+                {phase === "ready" ? "Get ready" : "Recording"}
+              </span>
             </p>
-          )}
-          <button className="btn btn-shimmer" onClick={upload} disabled={phase === "uploading"}>
-            <Upload size={18} aria-hidden="true" /> {phase === "uploading" ? "Uploading…" : "Upload recording"}
-          </button>
-          <button className="btn btn-quiet" onClick={download}>
-            <Download size={18} aria-hidden="true" /> Download data file
-          </button>
-        </section>
-      )}
+            <h2 key={`${step.id}-${phase}`} className={`sticker lab-step${phase === "rec" ? "" : " ready"}`}>
+              {step.title}
+            </h2>
+            <p className="muted">{step.detail}</p>
+            <div className="lab-bar">
+              <span
+                key={`${step.id}-${phase}`}
+                className={phase}
+                style={{ animationDuration: `${phase === "ready" ? READY_MS : step.seconds * 1000}ms` }}
+              />
+            </div>
+            <div className="lab-preview" aria-label="Where the current algorithm puts the pointer">
+              <div className="lab-dot-track" ref={dotRef}>
+                <span className="lab-dot" />
+              </div>
+            </div>
+            <p className="lab-readout">
+              α {readout.a.toFixed(1)} · β {readout.b.toFixed(1)} · γ {readout.g.toFixed(1)} °/s · {readout.n} samples
+            </p>
+          </Tile>
+        )}
 
-      {phase === "done" && resultId && (
-        <section className="lab-body center">
-          <span className="lab-ok">
-            <Check size={28} aria-hidden="true" />
-          </span>
-          <h2>Recording saved</h2>
-          <p className="muted">Send this ID for analysis:</p>
-          <button
-            className="lab-id"
-            onClick={() => {
-              void navigator.clipboard?.writeText(resultId).then(() => setCopied(true));
-            }}
-          >
-            <code>{resultId}</code>
-            {copied ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
-          </button>
-          <p className="muted small">
-            The server may clear recordings when it restarts, so share the ID soon, or keep a copy:
-          </p>
-          <button className="btn btn-quiet" onClick={download}>
-            <Download size={18} aria-hidden="true" /> Download data file
-          </button>
-          <button
-            className="btn btn-quiet"
-            onClick={() => {
-              setPhase("intro");
-              setIssues([]);
-              setNotes("");
-              setResultId(null);
-              setCopied(false);
-            }}
-          >
-            Record another
-          </button>
-        </section>
-      )}
+        {screen === "notes" && (
+          <>
+            <Tile accent="var(--c-pink)" className="lab-card">
+              <span className="brace-tag">{"{ Almost done }"}</span>
+              <h2 className="lab-h">
+                How did the <span className="sticker s-pink">pointer</span> feel?
+              </h2>
+              <p className="muted small">Pick everything that applies. This tells the analysis what to look for.</p>
+              <div className="lab-choice">
+                {ISSUES.map((s) => (
+                  <label key={s} className={`chip${issues.includes(s) ? " on" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={issues.includes(s)}
+                      onChange={(e) => setIssues((l) => (e.target.checked ? [...l, s] : l.filter((x) => x !== s)))}
+                    />
+                    {s}
+                  </label>
+                ))}
+              </div>
+              <label className="field">
+                <span className="field-label">Describe the problem in your own words</span>
+                <textarea
+                  rows={4}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. when I turn right the dot goes up, and it keeps sliding left when I stop"
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Phone model (optional)</span>
+                <input
+                  type="text"
+                  value={phoneModel}
+                  onChange={(e) => setPhoneModel(e.target.value)}
+                  placeholder="e.g. Pixel 8, iPhone 13"
+                />
+              </label>
+            </Tile>
+            {error && (
+              <p className="error small" role="alert">
+                {error}. You can still download the data file and send it directly.
+              </p>
+            )}
+            <button className="btn-go lab-cta" onClick={upload} disabled={phase === "uploading"}>
+              {phase === "uploading" ? "Uploading…" : "Upload recording"}
+              <span className="btn-go-icon">
+                <Upload size={18} aria-hidden="true" />
+              </span>
+            </button>
+            <button className="pill-link lab-quiet" onClick={download}>
+              <Download size={16} aria-hidden="true" /> Download data file
+            </button>
+          </>
+        )}
+
+        {screen === "done" && resultId && (
+          <>
+            <Tile accent="var(--c-green)" className="lab-card lab-done">
+              <span className="lab-ok">
+                <Check size={32} aria-hidden="true" />
+              </span>
+              <h2 className="lab-h">
+                Recording <span className="sticker s-green">saved</span>
+              </h2>
+              <p className="muted">Send this ID for analysis:</p>
+              <button
+                className="lab-id"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(resultId).then(() => setCopied(true));
+                }}
+              >
+                <code>{resultId}</code>
+                {copied ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}
+              </button>
+              <p className="muted small">
+                The server may clear recordings when it restarts, so share the ID soon, or keep a copy.
+              </p>
+            </Tile>
+            <button className="pill-link lab-quiet" onClick={download}>
+              <Download size={16} aria-hidden="true" /> Download data file
+            </button>
+            <button className="pill-link lab-quiet" onClick={reset}>
+              <RotateCcw size={16} aria-hidden="true" /> Record another
+            </button>
+          </>
+        )}
+      </main>
     </div>
   );
 }
