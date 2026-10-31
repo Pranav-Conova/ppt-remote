@@ -1,17 +1,26 @@
 <div align="center">
 
-<img src="frontend/public/logo.png" alt="Signify" width="360" />
+<img src="frontend/public/logo.png" alt="Signify" width="320" />
 
-### Control your presentations with hand gestures, or turn your phone into a clicker and laser pointer.
+# ✋ Signify
+
+### Run your slides with your hands, or turn your phone into a clicker and laser pointer.
+
+Open a PDF or PowerPoint deck in the browser. Change slides, point and draw with **hand gestures** in front of your webcam.<br>
+Or scan a QR code and your phone becomes a **gyroscope laser pointer**. No app, no clicker, no install.
 
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev)
-[![WebRTC](https://img.shields.io/badge/WebRTC-P2P-333333?logo=webrtc&logoColor=white)](https://webrtc.org)
+[![WebRTC](https://img.shields.io/badge/WebRTC-P2P-333333?logo=webrtc&logoColor=white)](#-latency-by-design)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Hands-0097A7?logo=google&logoColor=white)](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker)
+[![Runs on your devices](https://img.shields.io/badge/video-never%20leaves%20your%20laptop-orange)](#%EF%B8%8F-how-it-works)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)](#-contributing)
+[![GitHub stars](https://img.shields.io/github/stars/Pranav-Conova/Signify?style=social)](https://github.com/Pranav-Conova/Signify/stargazers)
 
-[**Quick start**](#-quick-start) · [**Deploy**](#-deployment) · [**How it works**](#-how-it-works) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
+[**Quick start**](#-quick-start) · [**What it does**](#-what-it-does) · [**Controls**](#-controls) · [**How it works**](#%EF%B8%8F-how-it-works) · [**Deploy**](#%EF%B8%8F-deploy) · [**Roadmap**](#%EF%B8%8F-roadmap) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
+
+<br>
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Pranav-Conova/Signify)
 
@@ -19,53 +28,102 @@
 
 ---
 
-## Table of contents
+## 🤔 Why?
 
-- [Overview](#-overview)
-- [Features](#-features)
-- [How it works](#-how-it-works)
-- [Latency by design](#-latency-by-design)
-- [Controls](#-controls)
-- [Quick start](#-quick-start)
-- [Configuration](#-configuration)
-- [Deployment](#-deployment)
-- [Project structure](#-project-structure)
-- [Testing](#-testing)
-- [Troubleshooting](#-troubleshooting)
-- [Tech stack & credits](#-tech-stack--credits)
+Every presenter knows the routine: walk back to the laptop to change slides, borrow a clicker that's out of battery, or wave a red laser that nobody on the video call can see.
 
----
+**Signify takes the laptop out of your hands.**
 
-## 🔭 Overview
+- 🖐️ **Gestures**: hold up one finger pattern to go forward, another to go back, point or draw. All on your webcam, all in the browser.
+- 📱 **Phone remote**: scan a QR code and your phone is a clicker. Hold *Pointer* and aim the phone at the screen to move a laser dot that everyone, in the room and on the call, can see.
+- ⚡ **Fast**: after pairing, the phone talks to the laptop **directly over your Wi-Fi**, with 8-byte pointer messages. The server is never in the way.
+- 🔒 **Private**: PDFs are rendered in your browser and never uploaded. Webcam video never leaves your laptop.
 
-**Signify** is a browser-based presentation system. Open a PDF or PowerPoint deck, go fullscreen, and control it **without a mouse or clicker**:
+It is the difference between *"next slide, please"* and just moving on.
 
-- 🖐️ **Hand gestures**: show a finger pattern to your webcam to change slides, point, draw, or undo.
-- 📱 **Phone remote**: scan the QR code on the home page and your phone becomes a clicker with a **gyroscope laser pointer**. There is no app to install.
+## ⚡ Quick start
 
-Everything latency-sensitive runs **on your devices**:
-- Slides are rendered in the browser.
-- Hand tracking runs in a Web Worker.
-- After pairing, the phone talks to the laptop **directly over WebRTC**.
+**Prerequisites:** [Go 1.25+](https://go.dev/dl/) and [Node.js 22+](https://nodejs.org). [LibreOffice](https://www.libreoffice.org) is optional and only needed for PowerPoint files.
 
-The Go server only serves the app, pairs devices and converts PowerPoint files.
+```bash
+git clone https://github.com/Pranav-Conova/Signify.git
+cd Signify
 
-> **Signify 2.0** replaces the original Django + OpenCV version, which is preserved on the [`v1`](../../tree/v1) branch. In v1, every webcam frame was sent to the server and every slide was sent back as a JPEG. In v2 the server never touches video.
+# Terminal 1: Go server on :8080
+cd backend
+go run ./cmd/server
 
-## ✨ Features
+# Terminal 2: Vite dev server on :5173 (proxies /api and /ws to :8080)
+cd frontend
+npm install
+npm run dev
+```
+
+Open **http://localhost:5173**, drop in a deck, and press `F` for fullscreen.
+
+### 📱 Try the phone remote locally
+
+Phones only allow motion sensors on **HTTPS** pages, and a phone can't reach `localhost`. Use a tunnel:
+
+```bash
+cloudflared tunnel --url http://localhost:5173    # or: ngrok http 5173
+```
+
+Open the tunnel URL **on the laptop too**, so the QR code on the home page points at it. Once paired, the phone and laptop still talk directly over your Wi-Fi.
+
+## ✨ What it does
 
 | | Feature | Details |
 |---|---|---|
 | 📄 | **PDF & PowerPoint** | PDFs render locally with pdf.js and are never uploaded. PPT/PPTX/ODP files are converted to PDF on the server with LibreOffice. |
-| 🖐️ | **Hand gestures** | MediaPipe Hand Landmarker runs on the GPU inside a Web Worker. There are six actions, and each one's five-finger pattern is customizable. |
-| 📱 | **Phone remote** | Pair with a QR code on the home page, *before* presenting, so the code never appears on the projected screen. Closing the presenter tab stops the remote. Big touch targets for Next, Prev, Pointer, Undo, Clear and Blank, plus a live slide counter. |
+| 🖐️ | **Hand gestures** | MediaPipe Hand Landmarker runs on the GPU inside a Web Worker. Six actions, and each one's five-finger pattern is customizable. |
+| 📱 | **Phone remote** | Pair with a QR code on the home page, *before* presenting, so the code never appears on the projected screen. Big touch targets for Next, Prev, Pointer, Undo, Clear and Blank, plus a live slide counter. |
 | 🔴 | **Gyro laser pointer** | Hold to point; drag down on the button to draw. Turning is measured in "player space" so it works at any holding angle, with tightening, acceleration, drift correction and soft smoothing. |
 | ✍️ | **Annotations** | Draw with your hand or your phone. Strokes are kept per slide and survive window resizes. |
 | 🎥 | **Camera overlay** | Optional mirrored picture-in-picture in any corner of the slide. |
 | ⚡ | **Low latency** | Direct WebRTC link on the same Wi-Fi, with automatic fallback to a server relay. A live RTT badge shows which one is in use. |
 | ⌨️ | **Keyboard** | Full keyboard control for when you just want a regular clicker. |
+| 🔬 | **Pointer Lab** | Record real gyro data from any phone and analyse it, instead of guessing why the pointer feels off. |
 
-## 🧭 How it works
+## 🎮 Controls
+
+### 🖐️ Hand gestures (defaults)
+
+Raise your hand above the bottom quarter of the camera view. `☝` = finger up, `·` = finger down.
+
+| Action | Thumb | Index | Middle | Ring | Pinky |
+|---|:-:|:-:|:-:|:-:|:-:|
+| Next slide | · | · | · | · | ☝ |
+| Previous slide | ☝ | · | · | · | · |
+| Point | · | ☝ | · | · | · |
+| Draw | ☝ | ☝ | · | · | · |
+| Undo | · | ☝ | ☝ | ☝ | · |
+| Show text | · | ☝ | ☝ | · | ☝ |
+
+All of these can be changed on the home page. Gestures must be held for about 3 frames to register, and one-shot actions have a 1 s cooldown.
+
+### 📱 Phone remote
+
+| Control | Action |
+|---|---|
+| **Next ▶ / ◀ Prev** | Change slide |
+| **Pointer** (hold) | Laser dot. Aim the phone at the screen. Continues from the last spot if pressed within 1.5 s. |
+| **Pointer**, drag down | While holding, drag your finger down to draw from where the dot is; drag up to stop. Needs the gyro (without one, dragging moves the dot instead). |
+| **Undo / Clear** | Remove the last stroke, or all strokes on the slide |
+| **Blank** | Black out the screen |
+| **⚙** | Sensitivity, acceleration, smoothing, drift correction, invert X/Y |
+
+### ⌨️ Keyboard
+
+| Key | Action | Key | Action |
+|---|---|---|---|
+| `→` `Space` `PgDn` | Next | `←` `PgUp` | Previous |
+| `B` | Blank screen | `T` | Toggle text |
+| `Z` | Undo | `C` | Clear slide |
+| `F` | Fullscreen | `P` | Show pairing QR (asks first) |
+| `Home` / `End` | First / last slide | | |
+
+## ⚙️ How it works
 
 ```mermaid
 flowchart LR
@@ -77,7 +135,7 @@ flowchart LR
 
     subgraph Phone["📱 Phone browser"]
         BTN["Buttons"]
-        GYRO["Gyro → One Euro filter"]
+        GYRO["Gyro → smoothing<br/>+ drift correction"]
     end
 
     subgraph Server["☁️ Go server"]
@@ -91,6 +149,14 @@ flowchart LR
     Laptop <-- "WebSocket: signaling / relay" --> SIG
     Laptop -- "upload PPTX" --> CONV
 ```
+
+1. **Slides**: PDFs are rendered in the browser with pdf.js, with the next slides pre-rendered. PowerPoint files go to the server once, are converted to PDF with headless LibreOffice, and come back.
+2. **Gestures**: MediaPipe Hand Landmarker runs on the GPU in a Web Worker. Each frame becomes a five-finger up/down pattern, and a gesture engine turns held patterns into actions.
+3. **Pairing**: the laptop creates a session and shows a QR code. The phone opens it, and the Go server forwards the WebRTC offer and answer between them.
+4. **Direct link**: once the DataChannels open, pointer and button messages go phone → laptop over Wi-Fi without touching the server. If a direct link isn't possible, the server relays them instead.
+5. **Pointer**: the phone turns gyro readings into an absolute screen position and sends it as an 8-byte frame. The laptop draws the dot with a single GPU transform per animation frame.
+
+The Go server only serves the app, pairs devices and converts PowerPoint files. It never touches video.
 
 <details>
 <summary><b>Pairing sequence</b></summary>
@@ -125,6 +191,8 @@ The remote token sits in the URL **fragment**, which browsers never send to the 
 
 </details>
 
+> **Signify 2.0** replaces the original Django + OpenCV version, which is preserved on the [`v1`](../../tree/v1) branch. In v1, every webcam frame was sent to the server and every slide was sent back as a JPEG. In v2 the server never touches video.
+
 ## ⚡ Latency by design
 
 Pointer lag is the hardest part of a phone laser pointer. Each design decision below exists to keep it low:
@@ -142,73 +210,15 @@ Pointer lag is the hardest part of a phone laser pointer. Each design decision b
 - **Relay with no backlog.** When a direct link isn't possible, the server keeps only the **latest** pointer frame per client.
 - **Clutch pointer.** The dot re-centres each time you press *Pointer*, so there is no gyro drift to calibrate.
 
-## 🎮 Controls
+<details>
+<summary><b>Known limits</b> (we'd rather tell you than have you find out)</summary>
 
-### Hand gestures (defaults)
+- Venue and office Wi-Fi often isolates devices from each other. The remote then falls back to the server relay, which works but adds pointer lag. A TURN server (`ICE_SERVERS`) or a phone hotspot fixes it.
+- The gyro pointer needs HTTPS. On a plain `http://` LAN address the phone won't share motion data.
+- PowerPoint files need LibreOffice on the server, and complex animations and transitions are flattened to static PDF pages.
+- Pointer Lab recordings live on the server's disk. On hosts with ephemeral disks (like Render's free tier) they're lost when the server restarts.
 
-Raise your hand above the bottom quarter of the camera view. `☝` = finger up, `·` = finger down.
-
-| Action | Thumb | Index | Middle | Ring | Pinky |
-|---|:-:|:-:|:-:|:-:|:-:|
-| Next slide | · | · | · | · | ☝ |
-| Previous slide | ☝ | · | · | · | · |
-| Point | · | ☝ | · | · | · |
-| Draw | ☝ | ☝ | · | · | · |
-| Undo | · | ☝ | ☝ | ☝ | · |
-| Show text | · | ☝ | ☝ | · | ☝ |
-
-All of these can be changed on the home page. Gestures must be held for about 3 frames to register, and one-shot actions have a 1 s cooldown.
-
-### Phone remote
-
-| Control | Action |
-|---|---|
-| **Next ▶ / ◀ Prev** | Change slide |
-| **Pointer** (hold) | Laser dot. Aim the phone at the screen. Continues from the last spot if pressed within 1.5 s. |
-| **Pointer**, drag down | While holding, drag your finger down to draw from where the dot is; drag up to stop. Needs the gyro (without one, dragging moves the dot instead). |
-| **Undo / Clear** | Remove the last stroke, or all strokes on the slide |
-| **Blank** | Black out the screen |
-| **⚙** | Sensitivity, acceleration, smoothing, drift correction, invert X/Y |
-
-### Keyboard
-
-| Key | Action | Key | Action |
-|---|---|---|---|
-| `→` `Space` `PgDn` | Next | `←` `PgUp` | Previous |
-| `B` | Blank screen | `T` | Toggle text |
-| `Z` | Undo | `C` | Clear slide |
-| `F` | Fullscreen | `P` | Show pairing QR (asks first) |
-| `Home` / `End` | First / last slide | | |
-
-## 🚀 Quick start
-
-**Prerequisites:** [Go 1.25+](https://go.dev/dl/) and [Node.js 22+](https://nodejs.org). [LibreOffice](https://www.libreoffice.org) is optional and only needed for PowerPoint files.
-
-```bash
-git clone https://github.com/Pranav-Conova/Signify.git
-cd Signify
-
-# Terminal 1: Go server on :8080
-cd backend
-go run ./cmd/server
-
-# Terminal 2: Vite dev server on :5173 (proxies /api and /ws to :8080)
-cd frontend
-npm install
-npm run dev
-```
-
-Open **http://localhost:5173**.
-
-### Testing the phone remote locally
-
-Phones only allow motion sensors on **HTTPS** pages, and a phone can't reach `localhost`. Use a tunnel:
-
-```bash
-cloudflared tunnel --url http://localhost:5173    # or: ngrok http 5173
-```
-
-Open the tunnel URL **on the laptop too**, so the QR code on the home page points at it. Once paired, the phone and laptop still talk directly over your Wi-Fi.
+</details>
 
 ## ⚙️ Configuration
 
@@ -223,7 +233,7 @@ All settings are optional environment variables; see [`.env.example`](.env.examp
 | `SOFFICE_PATH` | *(auto-detected)* | Path to LibreOffice's `soffice` binary |
 | `RECORDINGS_DIR` | *(system temp dir)* | Where Pointer Lab recordings are stored (keeps the newest 500) |
 
-## ☁️ Deployment
+## ☁️ Deploy
 
 ### Render (recommended)
 
@@ -263,21 +273,16 @@ Signify/
 │       └── web/                 embedded frontend build + SPA fallback
 ├── frontend/                    React + TypeScript (Vite)
 │   └── src/
-│       ├── routes/              Home, Present (laptop), Remote (phone)
+│       ├── routes/              Home, Present (laptop), Remote (phone), Lab
 │       ├── link/                WebRTC + relay transport, 8-byte pointer protocol
 │       ├── gesture/             MediaPipe worker, finger detection, gesture engine
-│       ├── remote/              gyro air-pointer, One Euro filter
+│       ├── remote/              gyro air-pointer, Pointer Lab recorder
 │       ├── slides/              pdf.js renderer with pre-rendering cache
-│       └── overlay/             laser pointer (rAF) and annotation canvas
+│       ├── overlay/             laser pointer (rAF) and annotation canvas
+│       └── ui/                  home page tiles, sheets and animations (GSAP)
+├── tools/                       Pointer Lab recording analyser
 ├── Dockerfile                   multi-stage: Node → Go → Debian + LibreOffice
 └── render.yaml                  Render Blueprint
-```
-
-## 🧪 Testing
-
-```bash
-cd backend  && go test ./...   # pairing, auth, TTL, relay coalescing, WebSocket end-to-end
-cd frontend && npm test        # pointer protocol, One Euro filter, finger + gesture logic
 ```
 
 ## 🔬 Pointer Lab (tuning the gyro pointer)
@@ -295,8 +300,6 @@ node tools/analyze-recording.mjs signify-gyro-....json     # or a downloaded fil
 ```
 
 The report shows the sample rate, gyro bias and noise, holding angle, which sensor axis moved in each step, and whether the pointer moved the way the step asked (✓ / ✗ reversed / ✗ wrong axis).
-
-> Recordings are stored as files under `RECORDINGS_DIR`. On hosts with ephemeral disks (like Render's free tier) they're lost when the server restarts, so analyse them soon or keep the downloaded file.
 
 ## 🩺 Troubleshooting
 
@@ -330,12 +333,41 @@ The QR code encodes the address the laptop is using. Open the presenter page thr
 The server needs LibreOffice. The Docker image includes it. For local development, install LibreOffice or export your slides to PDF.
 </details>
 
-## 🧰 Tech stack & credits
+## 🎯 Who is this for?
 
-- **Frontend:** [React](https://react.dev), [Vite](https://vite.dev), [TypeScript](https://www.typescriptlang.org), [pdf.js](https://mozilla.github.io/pdf.js/), [MediaPipe Tasks Vision](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker), [qrcode.react](https://github.com/zpao/qrcode.react)
+- **Teachers and lecturers** who want to move around the room instead of standing at the laptop.
+- **Speakers and presenters** without a clicker, or who want a laser pointer that shows up on the recording and the video call.
+- **Developers** curious about low-latency WebRTC, in-browser hand tracking, or gyro air-pointers.
+- **Accessibility projects** exploring hands-free and touch-free control.
+
+## 🗺️ Roadmap
+
+- [ ] Built-in TURN option for networks that block direct links
+- [ ] Speaker notes and a next-slide preview on the phone
+- [ ] Keep PowerPoint animations instead of flattening them to PDF
+- [ ] More gestures, and gestures recorded from your own hand
+- [ ] Multiple phones in one session (co-presenters)
+
+Have an idea? [Open an issue](https://github.com/Pranav-Conova/Signify/issues).
+
+## 🤝 Contributing
+
+Contributions are welcome, especially gesture accuracy, pointer feel on more phones, and better behaviour on locked-down networks.
+
+```bash
+cd backend  && go test ./...   # pairing, auth, TTL, relay coalescing, WebSocket end-to-end
+cd frontend && npm test        # pointer protocol, gyro pointer, finger + gesture logic
+```
+
+If you change the gyro pointer, please attach a Pointer Lab recording (or its analysis) from before and after in your pull request.
+
+## 🧰 Built with
+
+- **Frontend:** [React](https://react.dev), [Vite](https://vite.dev), [TypeScript](https://www.typescriptlang.org), [pdf.js](https://mozilla.github.io/pdf.js/), [MediaPipe Tasks Vision](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker), [GSAP](https://gsap.com), [qrcode.react](https://github.com/zpao/qrcode.react)
 - **Backend:** [Go](https://go.dev), [coder/websocket](https://github.com/coder/websocket), [LibreOffice](https://www.libreoffice.org) (headless)
-- **Pointer smoothing:** Casiez, Roussel & Vogel, [*1€ Filter: A Simple Speed-based Low-pass Filter for Noisy Input in Interactive Systems*](https://gery.casiez.net/1euro/) (CHI 2012)
 
-<div align="center">
-<sub>Built with ✋ by the Signify team</sub>
-</div>
+## ⭐ Star history
+
+If Signify got you through a presentation, a star helps other people find it.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Pranav-Conova/Signify&type=Date)](https://star-history.com/#Pranav-Conova/Signify&Date)
