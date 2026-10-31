@@ -475,6 +475,7 @@ export default function Home() {
             </span>
           </div>
           <p className="mini-big">Want a site like this?</p>
+          <p className="small">Creative websites, web apps and AI features. Open for freelance work.</p>
           <div className="me-row">
             <SocialLinks size={15} />
             <button className="me-cta" onClick={() => setAbout(true)}>
