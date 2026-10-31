@@ -28,6 +28,17 @@ export function RemoteDemo() {
         const step = (n: number) => () => (el.dataset.step = String(n));
         const label = (text: string) => () => (padLabel.textContent = text);
         const count = (text: string) => () => (counter.textContent = text);
+        // The phone always tilts towards wherever the laser is, as it would
+        // in your hand: left/right turns it, up/down nudges it.
+        const dot = q<SVGGElement>(".rd-dot");
+        const aim = gsap.quickSetter(".rd-phone", "css") as (v: gsap.TweenVars) => void;
+        const follow = {
+          onUpdate: () => {
+            const x = Number(gsap.getProperty(dot, "x"));
+            const y = Number(gsap.getProperty(dot, "y"));
+            aim({ rotation: (x - 170) * 0.18, y: (y - 90) * 0.12 });
+          },
+        };
 
         gsap.set(ink, { strokeDasharray: len, strokeDashoffset: len });
         gsap.set(".rd-dot", { x: 150, y: 60, opacity: 0 });
@@ -42,27 +53,25 @@ export function RemoteDemo() {
           .to(".rd-finger", { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" })
           .to(".rd-pad", { fill: POINT, duration: 0.2 }, "<")
           .to(".rd-dot", { opacity: 1, duration: 0.2 })
-          .to(".rd-phone", { rotation: -6, duration: 0.7 }, "<")
-          .to(".rd-dot", { x: 118, y: 42, duration: 0.7 }, "<")
-          .to(".rd-phone", { rotation: 4, duration: 0.9 })
-          .to(".rd-dot", { x: 204, y: 58, duration: 0.9 }, "<")
+          .to(".rd-dot", { x: 118, y: 42, duration: 0.7, ...follow }, "<")
+          .to(".rd-dot", { x: 204, y: 58, duration: 0.9, ...follow })
           // 2. drag down: the pad turns amber and the laser draws
           .call(step(2))
           .call(label("Drawing"))
           .to(".rd-finger", { y: 12, duration: 0.3 })
           .to(".rd-pad", { fill: DRAW, duration: 0.2 }, "<")
           .to(ink, { strokeDashoffset: 0, duration: 1.3, ease: "none" })
-          .to(".rd-dot", { motionPath: { path: ink }, duration: 1.3, ease: "none" }, "<")
+          .to(".rd-dot", { motionPath: { path: ink }, duration: 1.3, ease: "none", ...follow }, "<")
           // 3. drag up: drawing stops, the ink stays
           .call(step(3))
           .call(label("Pointer"))
           .to(".rd-finger", { y: -2, duration: 0.3 })
           .to(".rd-pad", { fill: POINT, duration: 0.2 }, "<")
-          .to(".rd-phone", { rotation: 0, duration: 0.6 })
-          .to(".rd-dot", { x: 250, y: 36, duration: 0.6 }, "<")
+          .to(".rd-dot", { x: 250, y: 36, duration: 0.6, ...follow })
           .to(".rd-finger", { opacity: 0, scale: 0, duration: 0.25 }, "+=0.2")
           .to(".rd-dot", { opacity: 0, duration: 0.2 }, "<")
           .to(".rd-pad", { fill: PAD, duration: 0.2 }, "<")
+          .to(".rd-phone", { rotation: 0, y: 0, duration: 0.5 }, "<")
           // 4. tap Next: the next slide comes up
           .call(step(4))
           .set(".rd-finger", { x: 17, y: 45 })
