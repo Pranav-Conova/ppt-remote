@@ -3,12 +3,15 @@
 // when you come back to a slide.
 
 type Stroke = [number, number][];
+/** What Undo reverses: the last stroke, or a Clear (which keeps the strokes it removed). */
+type Op = { kind: "stroke" } | { kind: "clear"; removed: Stroke[] };
 
 const COLOR = "#ff2d2d";
 const WIDTH = 0.004; // fraction of the slide width
 
 export class DrawLayer {
   private strokes = new Map<number, Stroke[]>();
+  private history = new Map<number, Op[]>();
   private slide = 0;
   private active: Stroke | null = null;
   private ctx: CanvasRenderingContext2D;
@@ -39,6 +42,7 @@ export class DrawLayer {
   beginStroke(x: number, y: number) {
     this.active = [[x, y]];
     this.list().push(this.active);
+    this.ops().push({ kind: "stroke" });
   }
 
   addPoint(x: number, y: number) {
@@ -53,22 +57,37 @@ export class DrawLayer {
     this.active = null;
   }
 
+  /** Removes the last stroke, or brings back everything the last Clear removed. */
   undo() {
     this.endStroke();
-    this.list().pop();
+    const op = this.ops().pop();
+    if (!op) return;
+    if (op.kind === "stroke") this.list().pop();
+    else this.strokes.set(this.slide, op.removed);
     this.redraw();
   }
 
-  clear() {
+  /** Removes every stroke on this slide. Returns false if there was nothing to clear. Undo brings them back. */
+  clear(): boolean {
     this.endStroke();
+    const removed = this.list();
+    if (!removed.length) return false;
     this.strokes.set(this.slide, []);
+    this.ops().push({ kind: "clear", removed });
     this.redraw();
+    return true;
   }
 
   private list() {
     let l = this.strokes.get(this.slide);
     if (!l) this.strokes.set(this.slide, (l = []));
     return l;
+  }
+
+  private ops() {
+    let h = this.history.get(this.slide);
+    if (!h) this.history.set(this.slide, (h = []));
+    return h;
   }
 
   private resize() {

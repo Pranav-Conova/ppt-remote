@@ -381,6 +381,94 @@
 .t-start-row .switch {
   min-height: 0;
 }
+
+/* Set-up steps: 1 Add slides → 2 Pair phone → 3 Start. The next step to do
+   is green, finished ones get a tick. */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.step + .step::before {
+  content: "";
+  width: 18px;
+  height: 1.5px;
+  background: var(--line);
+}
+.step-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 34px;
+  padding: 0 0.8rem 0 0.3rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+button.step-btn {
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+button.step-btn:hover {
+  border-color: var(--cream);
+  color: var(--cream);
+}
+.step-btn em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+.step-num {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  color: var(--cream);
+  font-size: 0.8rem;
+}
+.step.current .step-btn {
+  border-color: var(--c-green);
+  color: var(--cream);
+}
+.step.current .step-num {
+  background: var(--c-green);
+  color: var(--ink);
+}
+.step.done .step-num {
+  background: color-mix(in srgb, var(--c-green) 22%, transparent);
+  color: var(--c-green);
+}
+/* What the Start button is waiting for (or that it's ready). */
+.start-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.start-status.ready {
+  color: var(--c-green);
+  font-weight: 600;
+}
 .magnet {
   padding: 10px;
   margin: -10px;
@@ -546,6 +634,29 @@
 .t-pair .tile-icon {
   background: var(--ink);
   color: var(--c-green);
+}
+.tile-step {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.tile-tag {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+/* "Pair phone" in the steps points here: a short green pulse around the tile. */
+.t-pair.flash {
+  animation: tile-flash 1.3s var(--ease-out);
+}
+@keyframes tile-flash {
+  0%,
+  30% {
+    box-shadow:
+      0 0 0 4px var(--c-green),
+      8px 8px 0 var(--c-green);
+  }
 }
 .t-pair .pair-card {
   flex: 1;
@@ -971,24 +1082,6 @@ button.finger:active .finger-bar {
   scale: 1.06;
 }
 
-/* Phone status next to Start presenting. */
-.phone-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 36px;
-  padding: 0 0.85rem;
-  border-radius: 999px;
-  border: 1.5px dashed var(--line);
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-.phone-chip.on {
-  border: 1.5px solid var(--c-green);
-  background: color-mix(in srgb, var(--c-green) 14%, transparent);
-  color: var(--c-green);
-}
 
 /* ---- colour-block motion ---- */
 /* A big ink shape turns slowly behind each block and grows on hover. */
@@ -1316,6 +1409,124 @@ button.finger:active .finger-bar {
   color: var(--ink);
   background: var(--c-yellow);
 }
+/* Gestures on/off and the live camera test, above the list. */
+.sheet-tools {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 18px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+}
+.sheet-tools .switch {
+  min-height: 0;
+}
+.gt {
+  display: grid;
+  gap: 0.75rem;
+}
+.gt-toggle {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--cream);
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.gt-toggle:hover,
+.gt.on .gt-toggle {
+  background: var(--cream);
+  color: var(--ink);
+}
+.gt-live {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+.gt-video {
+  position: relative;
+  line-height: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--ink-3);
+  min-height: 120px;
+}
+.gt-video video {
+  width: 100%;
+  height: auto;
+  transform: scaleX(-1); /* mirror, like looking in a mirror */
+}
+.gt-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px dashed var(--c-yellow);
+  line-height: 1.2;
+}
+.gt-line span {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(14, 16, 15, 0.75);
+  color: var(--c-yellow);
+  font-size: 0.7rem;
+}
+.gt-read {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+}
+.gt-read .fp-f {
+  background: var(--ink-3);
+}
+.gt-read .fp-f.up {
+  background: var(--c-green);
+}
+.gt-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.gt-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+.gt-msg strong {
+  color: var(--c-green);
+}
+.gesture-card.live {
+  translate: -3px -3px;
+  border-color: var(--accent);
+  box-shadow: 5px 5px 0 var(--accent);
+}
+.live-tag {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 .gesture-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1714,6 +1925,9 @@ button.finger:active .finger-bar {
     padding: 0 0.6rem;
   }
   .gesture-list {
+    grid-template-columns: 1fr;
+  }
+  .gt-live {
     grid-template-columns: 1fr;
   }
   .sheet-foot {

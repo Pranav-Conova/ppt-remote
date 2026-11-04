@@ -6,6 +6,8 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
+  Eraser,
   Maximize,
   Minimize,
   MonitorOff,
@@ -17,7 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getDeck, type LoadedDeck } from "../lib/deckStore";
-import { loadSettings } from "../lib/settings";
+import { GESTURE_LABELS, loadSettings, type GestureName } from "../lib/settings";
 import { PdfDeck } from "../slides/pdfDeck";
 import { PointerLayer } from "../overlay/PointerLayer";
 import { DrawLayer } from "../overlay/DrawLayer";
@@ -32,6 +34,7 @@ import {
 } from "../link/presenterSession";
 import { FLAG_DRAW, FLAG_VISIBLE, SeqFilter, decodePointer, type ControlMessage } from "../link/protocol";
 import { StatusBadge } from "../link/StatusBadge";
+import { FingerPattern } from "../ui/FingerPattern";
 
 export default function Present() {
   const deck = getDeck();
@@ -59,6 +62,30 @@ const GESTURE_TOASTS: Record<HandAction, [LucideIcon, string]> = {
   toggle_text: [Type, "Text"],
 };
 
+/** Shown in the shortcuts overlay (?). Keep in sync with the keydown handler below. */
+const SHORTCUTS: [string[], string][] = [
+  [["→", "Space"], "Next slide"],
+  [["←"], "Previous slide"],
+  [["Home", "End"], "First / last slide"],
+  [["B"], "Blank the screen"],
+  [["Z"], "Undo drawing"],
+  [["C"], "Clear drawings on this slide"],
+  [["T"], "Show / hide your text"],
+  [["F"], "Fullscreen"],
+  [["P"], "Pair a phone"],
+  [["?"], "Show this help"],
+];
+
+/** The first-time tip is shown once per browser. */
+const HINT_KEY = "signify.hint.present.v1";
+const hintSeen = () => {
+  try {
+    return localStorage.getItem(HINT_KEY) === "1";
+  } catch {
+    return true;
+  }
+};
+
 function PresentView({ deck }: { deck: LoadedDeck }) {
   const navigate = useNavigate();
   const [settings] = useState(loadSettings);
@@ -76,7 +103,10 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
   const linkStatus = session.status;
   const [camera, setCamera] = useState<"off" | "loading" | "on" | "error">("off");
   const [box, setBox] = useState({ w: 0, h: 0 });
-  const [toast, setToast] = useState<{ key: number; action: HandAction } | null>(null);
+  const [toast, setToast] = useState<{ key: number; icon: LucideIcon; label: string } | null>(null);
+  const showToast = (icon: LucideIcon, label: string) => setToast((t) => ({ key: (t?.key ?? 0) + 1, icon, label }));
+  const [help, setHelp] = useState(false);
+  const [hint, setHint] = useState(() => !hintSeen());
   const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement);
 
   useEffect(() => {
@@ -281,7 +311,8 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
       action: (a) => {
         const act = actions.current;
         ({ next: act.next, previous: act.prev, undo: act.undo, toggle_text: act.text })[a]();
-        setToast((t) => ({ key: (t?.key ?? 0) + 1, action: a }));
+        const [icon, label] = GESTURE_TOASTS[a];
+        showToast(icon, label);
       },
       pointer: (x, y, mode) => {
         if (phoneActive()) return;
@@ -345,13 +376,22 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
       else if (["arrowleft", "pageup", "backspace", "arrowup"].includes(key)) a.prev();
       else if (key === "b" || key === ".") a.blank();
       else if (key === "z") a.undo();
-      else if (key === "c") a.clear();
+      else if (key === "c") {
+        if (draw.current?.clear()) showToast(Eraser, "Slide cleared · press Z to bring it back");
+      }
       else if (key === "t") a.text();
       else if (key === "f") toggleFullscreen();
       else if (key === "p") setPhonePanel((p) => (p === "closed" ? "confirm" : "closed"));
       else if (key === "home") setSlide(0);
       else if (key === "end") setSlide(Math.max(0, state.current.total - 1));
-      else return;
+      else if (key === "?") setHelp((h) => !h);
+      else if (key === "escape") {
+        // Not prevented: in fullscreen the browser also uses Esc to leave it.
+        setHelp(false);
+        setPhonePanel("closed");
+        return;
+      } else return;
+      setHint(false);
       e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
@@ -373,10 +413,23 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
     };
   }, []);
 
+  // The first-time tip: remembered as seen right away, and fades out by itself.
+  useEffect(() => {
+    if (!hint) return;
+    try {
+      localStorage.setItem(HINT_KEY, "1");
+    } catch {
+      // storage unavailable; the tip may show again next time
+    }
+    const t = setTimeout(() => setHint(false), 9000);
+    return () => clearTimeout(t);
+  }, [hint]);
+
   const connected = linkStatus?.peer ?? false;
+  const showControls = controlsVisible || phonePanel !== "closed" || help;
 
   return (
-    <div className="present" ref={stageRef} style={{ cursor: controlsVisible ? "auto" : "none" }}>
+    <div className="present" ref={stageRef} style={{ cursor: showControls ? "auto" : "none" }}>
       <div className="slide-box" style={{ width: box.w, height: box.h }}>
         <canvas ref={slideCanvasRef} className="slide-canvas" />
         <canvas ref={drawCanvasRef} className="draw-canvas" />
@@ -401,11 +454,21 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
         </div>
       )}
 
-      {toast && (
-        <GestureToast key={toast.key} action={toast.action} onDone={() => setToast(null)} />
+      {toast && <Toast key={toast.key} icon={toast.icon} label={toast.label} onDone={() => setToast(null)} />}
+
+      {hint && phonePanel === "closed" && !help && (
+        <div className="present-hint" role="status">
+          <span>
+            Use <kbd>←</kbd> <kbd>→</kbd> to change slides. Move the mouse to show the toolbar, and press <kbd>?</kbd>{" "}
+            for all shortcuts{settings.handGestures ? " and gestures" : ""}.
+          </span>
+          <button className="present-hint-x" onClick={() => setHint(false)} aria-label="Dismiss tip">
+            <X size={16} />
+          </button>
+        </div>
       )}
 
-      <div className={`present-controls${controlsVisible || phonePanel !== "closed" ? " visible" : ""}`}>
+      <div className={`present-controls${showControls ? " visible" : ""}`}>
         <div className="hud-top-right">
           {blank && (
             <span className="badge">
@@ -467,6 +530,18 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
             {connected && linkStatus ? <StatusBadge status={linkStatus} waitingFor="phone" /> : <span>Pair phone</span>}
           </button>
           <button
+            className={`tool${help ? " on" : ""}`}
+            onClick={() => {
+              setHelp((h) => !h);
+              setHint(false);
+            }}
+            aria-expanded={help}
+            aria-label="Shortcuts and gestures"
+            title="Shortcuts and gestures (?)"
+          >
+            <CircleHelp size={18} />
+          </button>
+          <button
             className="tool"
             onClick={toggleFullscreen}
             aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
@@ -476,6 +551,14 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
           </button>
         </div>
       </div>
+
+      {help && (
+        <HelpPanel
+          gestures={settings.handGestures ? settings.gestures : null}
+          cameraError={camera === "error"}
+          onClose={() => setHelp(false)}
+        />
+      )}
 
       {phonePanel === "confirm" && (
         <div className="phone-panel" role="alertdialog" aria-labelledby="pair-confirm-title">
@@ -539,12 +622,68 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
   );
 }
 
-function GestureToast({ action, onDone }: { action: HandAction; onDone: () => void }) {
-  const [Icon, label] = GESTURE_TOASTS[action];
+function Toast({ icon: Icon, label, onDone }: { icon: LucideIcon; label: string; onDone: () => void }) {
   return (
     <div className="gesture-toast" role="status" onAnimationEnd={onDone}>
       <Icon size={16} aria-hidden="true" />
       {label}
+    </div>
+  );
+}
+
+/** Keyboard shortcuts, plus the hand gestures when they are on, so nobody has to remember them. */
+function HelpPanel({
+  gestures,
+  cameraError,
+  onClose,
+}: {
+  gestures: Record<GestureName, number[]> | null;
+  cameraError: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <div className="help-panel" role="dialog" aria-labelledby="help-title">
+      <button className="close" onClick={onClose} aria-label="Close" autoFocus>
+        <X size={18} />
+      </button>
+      <h2 id="help-title">Shortcuts{gestures ? " and gestures" : ""}</h2>
+      <div className="help-cols">
+        <section>
+          <h3>Keyboard</h3>
+          <dl className="help-list">
+            {SHORTCUTS.map(([keys, what]) => (
+              <div key={what}>
+                <dt>
+                  {keys.map((k) => (
+                    <kbd key={k}>{k}</kbd>
+                  ))}
+                </dt>
+                <dd>{what}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+        {gestures && (
+          <section>
+            <h3>Hand gestures</h3>
+            {cameraError && <p className="error small">The camera isn't available, so gestures are off right now.</p>}
+            <dl className="help-list">
+              {(Object.keys(GESTURE_LABELS) as GestureName[]).map((name) => (
+                <div key={name}>
+                  <dt>
+                    <FingerPattern pattern={gestures[name]} size={34} />
+                  </dt>
+                  <dd>{GESTURE_LABELS[name]}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="muted small">Hold your hand up, above the bottom quarter of the camera view.</p>
+          </section>
+        )}
+      </div>
+      <p className="muted small help-foot">
+        Press <kbd>Esc</kbd> or <kbd>?</kbd> to close.
+      </p>
     </div>
   );
 }

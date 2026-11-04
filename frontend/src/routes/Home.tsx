@@ -209,6 +209,28 @@ export default function Home() {
     confetti(el);
   }
 
+  /** Step 2 lives in its own tile: bring it into view and make it flash. */
+  function showPair() {
+    const el = root.current?.querySelector<HTMLElement>(".t-pair");
+    if (!el) return;
+    el.scrollIntoView({ behavior: fullMotion() ? "smooth" : "auto", block: "nearest" });
+    el.classList.remove("flash");
+    void el.offsetWidth; // restart the animation
+    el.classList.add("flash");
+  }
+
+  // What step 3 is waiting for, said next to the Start button.
+  const ready = !!deck && !busy && dupes.length === 0;
+  const startStatus = busy
+    ? busy
+    : !deck
+      ? "Add your slides first."
+      : dupes.length > 0
+        ? "Fix the gestures first."
+        : paired
+          ? "Ready. Your phone is connected."
+          : "Ready. No phone? The arrow keys work too.";
+
   function start() {
     if (!deck) return;
     setDeck(deck);
@@ -306,6 +328,28 @@ export default function Home() {
             </p>
           </div>
 
+          {/* The whole set-up at a glance; each step ticks itself off. */}
+          <ol className="steps" aria-label="Set-up steps">
+            <li className={`step${deck ? " done" : " current"}`} aria-current={deck ? undefined : "step"}>
+              <button type="button" className="step-btn" onClick={() => fileInput.current?.click()}>
+                <span className="step-num">{deck ? <Check size={13} aria-label="Done:" /> : "1"}</span>
+                Add slides
+              </button>
+            </li>
+            <li className={`step${paired ? " done" : ""}`}>
+              <button type="button" className="step-btn" onClick={showPair}>
+                <span className="step-num">{paired ? <Check size={13} aria-label="Done:" /> : "2"}</span>
+                Pair phone <em>optional</em>
+              </button>
+            </li>
+            <li className={`step${ready ? " current" : ""}`} aria-current={ready ? "step" : undefined}>
+              <span className="step-btn">
+                <span className="step-num">3</span>
+                Start
+              </span>
+            </li>
+          </ol>
+
           <div
             ref={dropRef}
             className={`dropzone${dragging ? " over" : ""}${deck ? " has-file" : ""}`}
@@ -372,15 +416,16 @@ export default function Home() {
           )}
 
           <div className="t-start-row">
-            <span className={`phone-chip${paired ? " on" : ""}`} role="status">
-              {paired ? <Check size={15} aria-hidden="true" /> : <QrCode size={15} aria-hidden="true" />}
-              {paired ? "Phone connected" : "Scan the code to pair your phone"}
+            <span id="start-status" className={`start-status${ready ? " ready" : ""}`} role="status">
+              {ready && <Check size={15} aria-hidden="true" />}
+              {startStatus}
             </span>
             <div className="magnet" onPointerMove={magnet} onPointerLeave={unmagnet}>
               <button
                 ref={startRef}
                 className="btn-go start-btn"
-                disabled={!deck || !!busy || dupes.length > 0}
+                disabled={!ready}
+                aria-describedby="start-status"
                 onClick={start}
               >
                 Start presenting
@@ -402,7 +447,7 @@ export default function Home() {
 
         {/* ---- phone pairing ---- */}
         <Tile accent="var(--c-green)" className="t-pair">
-          <TileHead icon={QrCode} title="Pair your phone" />
+          <TileHead icon={QrCode} title="Pair your phone" step={2} tag="optional" done={paired} />
           <PairCard size={150} />
           <p className="small center pair-note">
             Pair here, <strong>before</strong> presenting, so the code never shows on the big screen.
@@ -526,13 +571,35 @@ export default function Home() {
   );
 }
 
-function TileHead({ icon: Icon, title }: { icon: LucideIcon; title: string }) {
+/** Tile title. With `step`, the icon becomes the step number (a tick once done), matching the steps in the Start tile. */
+function TileHead({
+  icon: Icon,
+  title,
+  step,
+  tag,
+  done,
+}: {
+  icon: LucideIcon;
+  title: string;
+  step?: number;
+  tag?: string;
+  done?: boolean;
+}) {
   return (
     <h2 className="tile-head">
-      <span className="tile-icon">
-        <Icon size={15} aria-hidden="true" />
+      <span className={`tile-icon${step ? " tile-step" : ""}`}>
+        {step ? (
+          done ? (
+            <Check size={15} aria-label={`Step ${step}, done:`} />
+          ) : (
+            <span aria-label={`Step ${step}:`}>{step}</span>
+          )
+        ) : (
+          <Icon size={15} aria-hidden="true" />
+        )}
       </span>
       {title}
+      {tag && <em className="tile-tag">{tag}</em>}
     </h2>
   );
 }

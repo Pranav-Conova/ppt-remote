@@ -2,8 +2,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
+  CloudOff,
   Eraser,
   FlaskConical,
+  LoaderCircle,
   MonitorOff,
   MousePointer2,
   PenLine,
@@ -40,8 +43,21 @@ const DRAW_DRAG_PX = 28;
 /** Touchpad fallback: slide widths moved per pixel dragged. */
 const TOUCHPAD_GAIN = 1 / 350;
 
+/** After Clear, the Undo button says "Undo clear" for this long. */
+const UNDO_CLEAR_MS = 4000;
+
 type Motion = "unknown" | "granted" | "denied" | "unsupported";
 type HoldMode = "pointer" | "draw";
+
+/** The how-to intro shows by itself on the first visit only; "?" brings it back. */
+const INTRO_KEY = "signify.remote.intro.v1";
+function introSeen() {
+  try {
+    return localStorage.getItem(INTRO_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function buzz(ms = 10) {
   navigator.vibrate?.(ms);
@@ -58,6 +74,10 @@ export default function Remote() {
   const [gyroSettings, setGyroSettings] = useState<GyroSettings>(loadGyroSettings);
   const [showSettings, setShowSettings] = useState(false);
   const [holding, setHolding] = useState<HoldMode | null>(null);
+  const [intro, setIntro] = useState(() => !introSeen());
+  const [undoClear, setUndoClear] = useState(false);
+  const undoClearTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(undoClearTimer.current), []);
 
   const link = useRef<Link | null>(null);
   const gyro = useRef<GyroPointer | null>(null);
@@ -151,7 +171,22 @@ export default function Remote() {
   const act = (a: RemoteAction) => {
     link.current?.sendControl({ t: "action", a });
     buzz();
+    // Clear is undoable: point that out on the Undo button for a moment.
+    clearTimeout(undoClearTimer.current);
+    setUndoClear(a === "clear");
+    if (a === "clear") undoClearTimer.current = setTimeout(() => setUndoClear(false), UNDO_CLEAR_MS);
   };
+
+  function closeIntro() {
+    try {
+      localStorage.setItem(INTRO_KEY, "1");
+    } catch {
+      // storage unavailable; the intro shows again next time
+    }
+    setIntro(false);
+    // This tap is a user gesture, so it can also ask for the motion sensors (iPhone).
+    if (motion === "unknown" && window.isSecureContext) void enableMotion();
+  }
 
   const startHold = (mode: HoldMode, e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -244,29 +279,56 @@ export default function Remote() {
   const needsMotion = motion === "unknown";
   const insecure = !window.isSecureContext;
 
+  if (intro) {
+    return (
+      <RemoteIntro
+        gyro={motion !== "unsupported" && motion !== "denied" && !insecure}
+        askMotion={needsMotion && !insecure}
+        onDone={closeIntro}
+      />
+    );
+  }
+
   return (
     <div className="remote">
       <header className="remote-bar">
-        <StatusBadge status={status} waitingFor="presenter" />
+        <StatusBadge status={status} waitingFor="laptop" />
+        {/* Empty until the laptop says which slide it's on; the notice below explains the wait. */}
         <span className="remote-counter" aria-live="polite">
-          {deckState ? (
+          {deckState && (
             <>
               <strong>{deckState.slide + 1}</strong>
               <span> / {deckState.total}</span>
             </>
-          ) : (
-            "– / –"
           )}
         </span>
-        <button
-          className={`icon-btn${showSettings ? " on" : ""}`}
-          onClick={() => setShowSettings((s) => !s)}
-          aria-label="Pointer settings"
-          aria-expanded={showSettings}
-        >
-          <Settings size={18} />
-        </button>
+        <span className="remote-bar-btns">
+          <button className="icon-btn" onClick={() => setIntro(true)} aria-label="How to use the remote">
+            <CircleHelp size={18} />
+          </button>
+          <button
+            className={`icon-btn${showSettings ? " on" : ""}`}
+            onClick={() => setShowSettings((s) => !s)}
+            aria-label="Pointer settings"
+            aria-expanded={showSettings}
+          >
+            <Settings size={18} />
+          </button>
+        </span>
       </header>
+
+      {!connected &&
+        (status?.server === "offline" ? (
+          <p className="notice" role="status">
+            <CloudOff size={16} aria-hidden="true" />
+            Can&apos;t reach the server. Check that your phone is online; this page keeps retrying by itself.
+          </p>
+        ) : (
+          <p className="notice notice-wait" role="status">
+            <LoaderCircle size={16} className="spin" aria-hidden="true" />
+            Waiting for your laptop… Keep Signify open there. This page connects by itself.
+          </p>
+        ))}
 
       {insecure && (
         <p className="notice">
@@ -373,9 +435,9 @@ export default function Remote() {
           <span>Next</span>
           <ChevronRight size={30} aria-hidden="true" />
         </TapButton>
-        <TapButton className="small" onTap={() => act("undo")}>
+        <TapButton className={`small${undoClear ? " hint" : ""}`} onTap={() => act("undo")}>
           <Undo2 size={20} aria-hidden="true" />
-          <span>Undo</span>
+          <span>{undoClear ? "Undo clear" : "Undo"}</span>
         </TapButton>
         <TapButton className="small" onTap={() => act("clear")}>
           <Eraser size={20} aria-hidden="true" />
@@ -441,5 +503,74 @@ function HoldPad(props: {
       <span className="pad-label">{props.label}</span>
       <span className="pad-hint">{props.hint}</span>
     </button>
+  );
+}
+
+/**
+ * First-visit how-to. "Hold, then drag down to draw" is new to everyone, so
+ * it is taught once, up front, with small looping CSS pictures of the
+ * Pointer pad (no GSAP on this route). `gyro` is false when the phone can't
+ * share motion data, where the pad works as a touchpad and can't draw.
+ */
+function RemoteIntro({ gyro, askMotion, onDone }: { gyro: boolean; askMotion: boolean; onDone: () => void }) {
+  return (
+    <div className="remote-intro">
+      <h1>Your phone is the remote</h1>
+      <ol className="ri-steps">
+        {gyro ? (
+          <>
+            <li>
+              <span className="ri-pad ri-point" aria-hidden="true">
+                <span className="ri-finger" />
+              </span>
+              <span>
+                <strong>Hold Pointer</strong> and aim your phone at the screen. A red dot follows. Let go to hide it.
+              </span>
+            </li>
+            <li>
+              <span className="ri-pad ri-draw" aria-hidden="true">
+                <span className="ri-finger" />
+              </span>
+              <span>
+                Keep holding and <strong>drag your finger down</strong> to draw where the dot is.
+              </span>
+            </li>
+            <li>
+              <span className="ri-pad ri-stop" aria-hidden="true">
+                <span className="ri-finger" />
+              </span>
+              <span>
+                <strong>Drag back up</strong> to stop drawing, and keep pointing.
+              </span>
+            </li>
+          </>
+        ) : (
+          <li>
+            <span className="ri-pad ri-touch" aria-hidden="true">
+              <span className="ri-finger" />
+            </span>
+            <span>
+              <strong>Hold Pointer and slide your finger</strong>, like a laptop touchpad, to move the red dot.
+            </span>
+          </li>
+        )}
+        <li>
+          <span className="ri-keys" aria-hidden="true">
+            <ChevronLeft size={18} />
+            <ChevronRight size={18} />
+          </span>
+          <span>
+            <strong>Prev</strong> and <strong>Next</strong> change slides. <strong>Undo</strong> even brings back
+            drawings you cleared.
+          </span>
+        </li>
+      </ol>
+      <button className="btn-intro" onClick={onDone}>
+        {askMotion ? "Got it, turn on the motion pointer" : "Got it"}
+      </button>
+      <p className="muted small">
+        Tap <CircleHelp size={14} aria-label="the question mark" /> at the top to see this again.
+      </p>
+    </div>
   );
 }
