@@ -658,6 +658,53 @@ button.step-btn:hover {
       8px 8px 0 var(--c-green);
   }
 }
+/* Start was pressed with no phone paired: the tile shakes, then holds a
+   green ring so the eye lands on the QR code. */
+.t-pair.shake {
+  animation:
+    tile-shake 0.6s var(--ease-out),
+    tile-ring 2.4s var(--ease-out);
+}
+@keyframes tile-shake {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  15% {
+    translate: -10px 0;
+    rotate: -1.5deg;
+  }
+  30% {
+    translate: 9px 0;
+    rotate: 1.2deg;
+  }
+  45% {
+    translate: -7px 0;
+    rotate: -0.8deg;
+  }
+  60% {
+    translate: 5px 0;
+    rotate: 0.5deg;
+  }
+  75% {
+    translate: -2px 0;
+    rotate: 0deg;
+  }
+}
+@keyframes tile-ring {
+  0%,
+  70% {
+    box-shadow:
+      0 0 0 4px var(--c-green),
+      8px 8px 0 var(--c-green);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-pair.shake {
+    animation: tile-ring 2.4s var(--ease-out);
+  }
+}
 .t-pair .pair-card {
   flex: 1;
   align-content: center;

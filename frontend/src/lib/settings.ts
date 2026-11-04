@@ -31,8 +31,9 @@ export const DEFAULT_SETTINGS: PresenterSettings = {
     undo: [0, 1, 1, 1, 0],
     toggle_text: [0, 1, 1, 0, 1],
   },
-  handGestures: true,
-  camera: { visible: true, corner: "tl" },
+  // The webcam stays off until asked for: the phone is the default remote.
+  handGestures: false,
+  camera: { visible: false, corner: "tl" },
   overlayText: "NAMASKARAM",
 };
 

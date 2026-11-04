@@ -88,6 +88,8 @@ export default function Home() {
   const [sheet, setSheet] = useState(false);
   const [about, setAbout] = useState(false);
   const [settings, setSettings] = useState<PresenterSettings>(loadSettings);
+  // Start was pressed with no phone and no gestures: the QR tile shook once.
+  const [nudged, setNudged] = useState(false);
 
   useEffect(() => saveSettings(settings), [settings]);
 
@@ -99,6 +101,7 @@ export default function Home() {
   useEffect(() => {
     if (paired && !wasPaired.current) confetti(root.current?.querySelector(".t-pair .pair-visual") ?? null, 34);
     wasPaired.current = paired;
+    if (paired) setNudged(false);
   }, [paired]);
 
   // ---- motion ----------------------------------------------------------------
@@ -209,15 +212,20 @@ export default function Home() {
     confetti(el);
   }
 
-  /** Step 2 lives in its own tile: bring it into view and make it flash. */
-  function showPair() {
+  /** Step 2 lives in its own tile: bring it into view and make it flash (or shake). */
+  function showPair(effect: "flash" | "shake" = "flash") {
     const el = root.current?.querySelector<HTMLElement>(".t-pair");
     if (!el) return;
     el.scrollIntoView({ behavior: fullMotion() ? "smooth" : "auto", block: "nearest" });
-    el.classList.remove("flash");
+    el.classList.remove("flash", "shake");
     void el.offsetWidth; // restart the animation
-    el.classList.add("flash");
+    el.classList.add(effect);
   }
+
+  // Without a phone or gestures the only control is the keyboard, which is
+  // easy to miss, so the first press of Start points at the QR code instead.
+  const needsPhone = !paired && !settings.handGestures;
+  const nudgeShown = nudged && needsPhone;
 
   // What step 3 is waiting for, said next to the Start button.
   const ready = !!deck && !busy && dupes.length === 0;
@@ -229,10 +237,19 @@ export default function Home() {
         ? "Fix the gestures first."
         : paired
           ? "Ready. Your phone is connected."
-          : "Ready. No phone? The arrow keys work too.";
+          : nudgeShown
+            ? "Scan the QR code with your phone's camera, or press Start again to use the arrow keys."
+            : settings.handGestures
+              ? "Ready. Hand gestures are on, and the arrow keys work too."
+              : "Ready. Scan the QR code to use your phone as the remote.";
 
   function start() {
     if (!deck) return;
+    if (needsPhone && !nudged) {
+      setNudged(true);
+      showPair("shake");
+      return;
+    }
     setDeck(deck);
     // Must run inside the click handler to be allowed.
     document.documentElement.requestFullscreen?.().catch(() => {});
@@ -337,7 +354,7 @@ export default function Home() {
               </button>
             </li>
             <li className={`step${paired ? " done" : ""}`}>
-              <button type="button" className="step-btn" onClick={showPair}>
+              <button type="button" className="step-btn" onClick={() => showPair()}>
                 <span className="step-num">{paired ? <Check size={13} aria-label="Done:" /> : "2"}</span>
                 Pair phone <em>optional</em>
               </button>
@@ -416,8 +433,8 @@ export default function Home() {
           )}
 
           <div className="t-start-row">
-            <span id="start-status" className={`start-status${ready ? " ready" : ""}`} role="status">
-              {ready && <Check size={15} aria-hidden="true" />}
+            <span id="start-status" className={`start-status${ready && !nudgeShown ? " ready" : ""}`} role="status">
+              {ready && !nudgeShown && <Check size={15} aria-hidden="true" />}
               {startStatus}
             </span>
             <div className="magnet" onPointerMove={magnet} onPointerLeave={unmagnet}>
