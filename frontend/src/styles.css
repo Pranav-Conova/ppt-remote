@@ -82,19 +82,6 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Zoom-blur entrance for pop-ups (ui/Sheet.tsx): the page steps back. */
-#root {
-  transition: scale 0.5s var(--ease-out);
-}
-html.popup-open #root {
-  scale: 0.96;
-}
-@media (prefers-reduced-motion: reduce) {
-  html.popup-open #root {
-    scale: none;
-  }
-}
-
 html,
 body,
 #root {
@@ -780,18 +767,6 @@ kbd {
 }
 
 /* Behind the presenter's pop-ups (phone pairing, shortcuts). */
-/* Same zoom-blur entrance on the presenter: the slide steps back. */
-.present .slide-box {
-  transition: scale 0.5s var(--ease-out);
-}
-.present.popup-open .slide-box {
-  scale: 0.96;
-}
-@media (prefers-reduced-motion: reduce) {
-  .present.popup-open .slide-box {
-    scale: none;
-  }
-}
 .popup-backdrop {
   position: fixed;
   inset: 0;

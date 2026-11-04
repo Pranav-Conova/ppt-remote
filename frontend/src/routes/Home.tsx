@@ -93,8 +93,6 @@ export default function Home() {
   const [settings, setSettings] = useState<PresenterSettings>(loadSettings);
   // Start was pressed before a phone was paired: ask before going on.
   const [noRemote, setNoRemote] = useState(false);
-  const noRemoteTimer = useRef(0);
-  useEffect(() => () => clearTimeout(noRemoteTimer.current), []);
 
   useEffect(() => saveSettings(settings), [settings]);
 
@@ -106,10 +104,7 @@ export default function Home() {
   useEffect(() => {
     if (paired && !wasPaired.current) confetti(root.current?.querySelector(".t-pair .pair-visual") ?? null, 34);
     wasPaired.current = paired;
-    if (paired) {
-      clearTimeout(noRemoteTimer.current);
-      setNoRemote(false);
-    }
+    if (paired) setNoRemote(false);
   }, [paired]);
 
   // ---- motion ----------------------------------------------------------------
@@ -242,15 +237,12 @@ export default function Home() {
           ? "Ready. Your phone is connected."
           : "Next: scan the QR code with your phone.";
 
-  /** Start pressed: the phone is the remote, so without one the QR tile
-   *  shakes first and then a pop-up asks whether to go on anyway. */
+  /** Start pressed: the phone is the remote, so without one a pop-up asks
+   *  whether to go on anyway ("Pair my phone" then shakes the QR tile). */
   function start() {
     if (!deck) return;
     if (!paired) {
-      showPair("shake");
-      clearTimeout(noRemoteTimer.current);
-      // Let the shake play before the pop-up blurs the page.
-      noRemoteTimer.current = window.setTimeout(() => setNoRemote(true), fullMotion() ? 700 : 0);
+      setNoRemote(true);
       return;
     }
     present();

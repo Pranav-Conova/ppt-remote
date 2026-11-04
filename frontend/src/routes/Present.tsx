@@ -443,7 +443,7 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
   const showControls = controlsVisible || phonePanel !== "closed" || help;
 
   return (
-    <div className={`present${help || phonePanel !== "closed" ? " popup-open" : ""}`} ref={stageRef} style={{ cursor: showControls ? "auto" : "none" }}>
+    <div className="present" ref={stageRef} style={{ cursor: showControls ? "auto" : "none" }}>
       <div className="slide-box" style={{ width: box.w, height: box.h }}>
         <canvas ref={slideCanvasRef} className="slide-canvas" />
         <canvas ref={drawCanvasRef} className="draw-canvas" />
