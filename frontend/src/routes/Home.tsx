@@ -27,6 +27,7 @@ import { AboutSheet, SocialLinks } from "../ui/AboutSheet";
 import { Asterisk, Clover, InkShape, MORPH_SHAPES, Morpher, Ring, Squiggle, confetti } from "../ui/art";
 import { GitHubIcon } from "../ui/GitHubIcon";
 import { GestureSheet } from "../ui/GestureSheet";
+import { NoRemoteSheet } from "../ui/NoRemoteSheet";
 import { PairCard } from "../ui/PairCard";
 import { RemoteDemo } from "../ui/RemoteDemo";
 import { Switch } from "../ui/Switch";
@@ -88,8 +89,10 @@ export default function Home() {
   const [sheet, setSheet] = useState(false);
   const [about, setAbout] = useState(false);
   const [settings, setSettings] = useState<PresenterSettings>(loadSettings);
-  // Start was pressed with no phone and no gestures: the QR tile shook once.
-  const [nudged, setNudged] = useState(false);
+  // Start was pressed before a phone was paired: ask before going on.
+  const [noRemote, setNoRemote] = useState(false);
+  const noRemoteTimer = useRef(0);
+  useEffect(() => () => clearTimeout(noRemoteTimer.current), []);
 
   useEffect(() => saveSettings(settings), [settings]);
 
@@ -101,7 +104,10 @@ export default function Home() {
   useEffect(() => {
     if (paired && !wasPaired.current) confetti(root.current?.querySelector(".t-pair .pair-visual") ?? null, 34);
     wasPaired.current = paired;
-    if (paired) setNudged(false);
+    if (paired) {
+      clearTimeout(noRemoteTimer.current);
+      setNoRemote(false);
+    }
   }, [paired]);
 
   // ---- motion ----------------------------------------------------------------
@@ -222,11 +228,6 @@ export default function Home() {
     el.classList.add(effect);
   }
 
-  // Without a phone or gestures the only control is the keyboard, which is
-  // easy to miss, so the first press of Start points at the QR code instead.
-  const needsPhone = !paired && !settings.handGestures;
-  const nudgeShown = nudged && needsPhone;
-
   // What step 3 is waiting for, said next to the Start button.
   const ready = !!deck && !busy && dupes.length === 0;
   const startStatus = busy
@@ -237,19 +238,24 @@ export default function Home() {
         ? "Fix the gestures first."
         : paired
           ? "Ready. Your phone is connected."
-          : nudgeShown
-            ? "Scan the QR code with your phone's camera, or press Start again to use the arrow keys."
-            : settings.handGestures
-              ? "Ready. Hand gestures are on, and the arrow keys work too."
-              : "Ready. Scan the QR code to use your phone as the remote.";
+          : "Next: scan the QR code with your phone.";
 
+  /** Start pressed: the phone is the remote, so without one the QR tile
+   *  shakes first and then a pop-up asks whether to go on anyway. */
   function start() {
     if (!deck) return;
-    if (needsPhone && !nudged) {
-      setNudged(true);
+    if (!paired) {
       showPair("shake");
+      clearTimeout(noRemoteTimer.current);
+      // Let the shake play before the pop-up blurs the page.
+      noRemoteTimer.current = window.setTimeout(() => setNoRemote(true), fullMotion() ? 700 : 0);
       return;
     }
+    present();
+  }
+
+  function present() {
+    if (!deck) return;
     setDeck(deck);
     // Must run inside the click handler to be allowed.
     document.documentElement.requestFullscreen?.().catch(() => {});
@@ -353,13 +359,16 @@ export default function Home() {
                 Add slides
               </button>
             </li>
-            <li className={`step${paired ? " done" : ""}`}>
+            <li
+              className={`step${paired ? " done" : deck ? " current" : ""}`}
+              aria-current={deck && !paired ? "step" : undefined}
+            >
               <button type="button" className="step-btn" onClick={() => showPair()}>
                 <span className="step-num">{paired ? <Check size={13} aria-label="Done:" /> : "2"}</span>
-                Pair phone <em>optional</em>
+                Pair phone
               </button>
             </li>
-            <li className={`step${ready ? " current" : ""}`} aria-current={ready ? "step" : undefined}>
+            <li className={`step${ready && paired ? " current" : ""}`} aria-current={ready && paired ? "step" : undefined}>
               <span className="step-btn">
                 <span className="step-num">3</span>
                 Start
@@ -433,8 +442,8 @@ export default function Home() {
           )}
 
           <div className="t-start-row">
-            <span id="start-status" className={`start-status${ready && !nudgeShown ? " ready" : ""}`} role="status">
-              {ready && !nudgeShown && <Check size={15} aria-hidden="true" />}
+            <span id="start-status" className={`start-status${ready && paired ? " ready" : ""}`} role="status">
+              {ready && paired && <Check size={15} aria-hidden="true" />}
               {startStatus}
             </span>
             <div className="magnet" onPointerMove={magnet} onPointerLeave={unmagnet}>
@@ -464,7 +473,7 @@ export default function Home() {
 
         {/* ---- phone pairing ---- */}
         <Tile accent="var(--c-green)" className="t-pair">
-          <TileHead icon={QrCode} title="Pair your phone" step={2} tag="optional" done={paired} />
+          <TileHead icon={QrCode} title="Pair your phone" step={2} done={paired} />
           <PairCard size={150} />
           <p className="small center pair-note">
             Pair here, <strong>before</strong> presenting, so the code never shows on the big screen.
@@ -584,6 +593,15 @@ export default function Home() {
         <GestureSheet settings={settings} setSettings={setSettings} dupes={dupes} onClose={() => setSheet(false)} />
       )}
       {about && <AboutSheet onClose={() => setAbout(false)} />}
+      {noRemote && (
+        <NoRemoteSheet
+          onPair={() => {
+            setNoRemote(false);
+            showPair("shake");
+          }}
+          onContinue={present}
+        />
+      )}
     </div>
   );
 }

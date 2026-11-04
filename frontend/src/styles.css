@@ -766,8 +766,29 @@ kbd {
   font-weight: 500;
 }
 
+/* Behind the presenter's pop-ups (phone pairing, shortcuts). */
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px) saturate(0.9);
+  -webkit-backdrop-filter: blur(16px) saturate(0.9);
+  animation: backdrop-in 0.3s var(--ease-out);
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .popup-backdrop {
+    animation: none;
+  }
+}
 .phone-panel {
   position: fixed;
+  z-index: 20;
   left: 50%;
   bottom: 84px;
   transform: translateX(-50%);

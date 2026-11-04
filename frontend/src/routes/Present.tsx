@@ -552,6 +552,18 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
         </div>
       </div>
 
+      {(help || phonePanel !== "closed") && (
+        // Blurs the slide behind a pop-up; a click on it closes the pop-up.
+        <div
+          className="popup-backdrop"
+          aria-hidden="true"
+          onClick={() => {
+            setHelp(false);
+            setPhonePanel("closed");
+          }}
+        />
+      )}
+
       {help && (
         <HelpPanel
           gestures={settings.handGestures ? settings.gestures : null}

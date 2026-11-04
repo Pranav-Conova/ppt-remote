@@ -1392,9 +1392,10 @@ button.finger:active .finger-bar {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(8, 9, 8, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  /* A light tint so the blur behind every pop-up is clearly visible. */
+  background: rgba(8, 9, 8, 0.45);
+  backdrop-filter: blur(16px) saturate(0.9);
+  -webkit-backdrop-filter: blur(16px) saturate(0.9);
 }
 .sheet {
   --ink: #0e100f;
@@ -1650,6 +1651,82 @@ button.finger:active .finger-bar {
 }
 .sheet-foot .btn-spectrum:hover {
   background: var(--c-lime);
+}
+
+/* ---- "continue without a remote?" pop-up ---- */
+.no-remote-sheet {
+  width: min(460px, 100%);
+  box-shadow: 10px 10px 0 var(--c-green);
+}
+.no-remote-sheet h2 {
+  font-size: clamp(1.3rem, 2.8vh, 1.7rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 0.4rem;
+}
+.no-remote-sheet .muted {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.no-remote-sheet kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 0.35em;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--cream);
+  font: inherit;
+  font-size: 0.85em;
+  text-align: center;
+}
+.no-remote-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--c-green);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--cream);
+}
+.no-remote-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+.btn-quiet-pill,
+.btn-pair-pill {
+  min-height: 46px;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.btn-quiet-pill {
+  border: 1.5px solid var(--line);
+  background: transparent;
+  color: var(--text-muted);
+}
+.btn-quiet-pill:hover {
+  border-color: var(--cream);
+  color: var(--cream);
+}
+.btn-pair-pill {
+  border: 0;
+  background: var(--c-green);
+  color: var(--ink);
+}
+.btn-pair-pill:hover {
+  background: var(--c-lime);
+}
+@media (max-width: 420px) {
+  .no-remote-actions > * {
+    flex: 1 1 100%;
+  }
 }
 
 /* ---- about sheet ---- */
