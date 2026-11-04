@@ -1,6 +1,7 @@
-// Holds the chosen presentation while moving from the home page to the
-// presenter view. It is kept in memory only: the file never leaves the
-// browser unless it is a PPTX that needs converting.
+// Holds the chosen presentation while moving between the home page and the
+// presenter view, so going back home keeps the slides loaded. It is kept in
+// memory only (a page reload clears it): the file never leaves the browser
+// unless it is a PPTX that needs converting.
 
 export interface LoadedDeck {
   name: string;

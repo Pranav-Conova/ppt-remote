@@ -20,7 +20,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { convertPptx, setDeck, type LoadedDeck } from "../lib/deckStore";
+import { convertPptx, getDeck, setDeck, type LoadedDeck } from "../lib/deckStore";
 import { duplicateGestures, loadSettings, saveSettings, type Corner, type PresenterSettings } from "../lib/settings";
 import { usePresenterSession } from "../link/presenterSession";
 import { AboutSheet, SocialLinks } from "../ui/AboutSheet";
@@ -82,7 +82,9 @@ export default function Home() {
   const fileInput = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const startRef = useRef<HTMLButtonElement>(null);
-  const [deck, setLocalDeck] = useState<LoadedDeck | null>(null);
+  // Coming back from the presentation keeps the slides that were loaded.
+  const [deck, setLocalDeck] = useState<LoadedDeck | null>(getDeck);
+  useEffect(() => setDeck(deck), [deck]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
