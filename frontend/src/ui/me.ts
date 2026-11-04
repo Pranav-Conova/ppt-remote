@@ -1,4 +1,4 @@
-// The person behind Signify, shown on the home page's contact tile and in
+// The person behind ppt-remote, shown on the home page's contact tile and in
 // the About sheet. Edit here; leave a link null to hide its button.
 export const ME = {
   name: "Pranav T",
@@ -36,7 +36,7 @@ export const SERVICES = [
 ] as const;
 
 export const WORK: { name: string; what: string; url?: string }[] = [
-  { name: "Signify", what: "This site · gesture-controlled slides, published in IRJMETS" },
+  { name: "ppt-remote", what: "This site · gesture-controlled slides, published in IRJMETS (as Signify)" },
   { name: "Oldreport", what: "E-commerce for a clothing brand · React, Go, Razorpay", url: "https://oldreport.in" },
   { name: "SBM Cargo", what: "Mobile-first site for a logistics company", url: "https://sbmcargoservices.com" },
   { name: "TRIPMATIK", what: "Multi-tenant SaaS platform, co-built from scratch" },
@@ -44,7 +44,7 @@ export const WORK: { name: string; what: string; url?: string }[] = [
 
 /** A ready-to-send email in the visitor's mail app. */
 export function enquiryMailto({ name, need, message }: { name: string; need: string; message: string }) {
-  const subject = `Project enquiry: ${need} (via Signify)`;
+  const subject = `Project enquiry: ${need} (via ppt-remote)`;
   const body = [
     `Hi ${ME.name.split(" ")[0]},`,
     "",

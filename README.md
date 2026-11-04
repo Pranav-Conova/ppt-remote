@@ -1,15 +1,15 @@
 <div align="center">
 
-# ✋ Signify
+# ✋ ppt-remote
 
 ### Run your slides with your hands, or turn your phone into a clicker and laser pointer.
 
 Open a PDF or PowerPoint deck in the browser. Change slides, point and draw with **hand gestures** in front of your webcam.<br>
 Or scan a QR code and your phone becomes a **gyroscope laser pointer**. No app, no clicker, no install.
 
-### 👉 [Try it live: signify-4kql.onrender.com](https://signify-4kql.onrender.com/)
+### 👉 [Try it live: ppt-remote.onrender.com](https://ppt-remote.onrender.com/)
 
-[![Live demo](https://img.shields.io/badge/live%20demo-signify--4kql.onrender.com-46E3B7?logo=render&logoColor=white)](https://signify-4kql.onrender.com/)
+[![Live demo](https://img.shields.io/badge/live%20demo-ppt--remote.onrender.com-46E3B7?logo=render&logoColor=white)](https://ppt-remote.onrender.com/)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -19,7 +19,7 @@ Or scan a QR code and your phone becomes a **gyroscope laser pointer**. No app, 
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)](#-contributing)
 [![GitHub stars](https://img.shields.io/github/stars/Pranav-Conova/Signify?style=social)](https://github.com/Pranav-Conova/Signify/stargazers)
 
-[**Live demo**](https://signify-4kql.onrender.com/) · [**Quick start**](#-quick-start) · [**What it does**](#-what-it-does) · [**Controls**](#-controls) · [**How it works**](#%EF%B8%8F-how-it-works) · [**Deploy**](#%EF%B8%8F-deploy) · [**Roadmap**](#%EF%B8%8F-roadmap) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
+[**Live demo**](https://ppt-remote.onrender.com/) · [**Quick start**](#-quick-start) · [**What it does**](#-what-it-does) · [**Controls**](#-controls) · [**How it works**](#%EF%B8%8F-how-it-works) · [**Deploy**](#%EF%B8%8F-deploy) · [**Roadmap**](#%EF%B8%8F-roadmap) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
 
 <br>
 
@@ -33,7 +33,7 @@ Or scan a QR code and your phone becomes a **gyroscope laser pointer**. No app, 
 
 Every presenter knows the routine: walk back to the laptop to change slides, borrow a clicker that's out of battery, or wave a red laser that nobody on the video call can see.
 
-**Signify takes the laptop out of your hands.**
+**ppt-remote takes the laptop out of your hands.**
 
 - 🖐️ **Gestures**: hold up one finger pattern to go forward, another to go back, point or draw. All on your webcam, all in the browser.
 - 📱 **Phone remote**: scan a QR code and your phone is a clicker. Hold *Pointer* and aim the phone at the screen to move a laser dot that everyone, in the room and on the call, can see.
@@ -44,7 +44,7 @@ It is the difference between *"next slide, please"* and just moving on.
 
 ## ⚡ Quick start
 
-**Just want to try it?** Open **[signify-4kql.onrender.com](https://signify-4kql.onrender.com/)** on your laptop, drop in a deck, and scan the QR code with your phone. Nothing to install.
+**Just want to try it?** Open **[ppt-remote.onrender.com](https://ppt-remote.onrender.com/)** on your laptop, drop in a deck, and scan the QR code with your phone. Nothing to install.
 
 > It runs on Render's free tier, so the first visit after a quiet spell can take 30–50 s to wake up.
 
@@ -198,13 +198,13 @@ The remote token sits in the URL **fragment**, which browsers never send to the 
 
 </details>
 
-> **Signify 2.0** replaces the original Django + OpenCV version, which is preserved on the [`v1`](../../tree/v1) branch. In v1, every webcam frame was sent to the server and every slide was sent back as a JPEG. In v2 the server never touches video.
+> **ppt-remote** (formerly Signify 2.0) replaces the original Django + OpenCV version, which is preserved on the [`v1`](../../tree/v1) branch. In v1, every webcam frame was sent to the server and every slide was sent back as a JPEG. In v2 the server never touches video.
 
 ## ⚡ Latency by design
 
 Pointer lag is the hardest part of a phone laser pointer. Each design decision below exists to keep it low:
 
-| Stage | Through a cloud relay | **Signify (direct)** |
+| Stage | Through a cloud relay | **ppt-remote (direct)** |
 |---|---|---|
 | Network path | Phone → internet → server → internet → laptop (**60–150 ms**) | Phone → Wi-Fi → laptop (**~2–10 ms**) |
 | A lost packet | TCP stalls every later update (100 ms+ spikes) | That frame is skipped and the next one replaces it |
@@ -255,16 +255,16 @@ The repo includes a [Render Blueprint](render.yaml).
 ### Docker
 
 ```bash
-docker build -t signify .
-docker run -p 8080:8080 signify
+docker build -t ppt-remote .
+docker run -p 8080:8080 ppt-remote
 ```
 
 ### Single binary
 
 ```bash
 cd frontend && npm ci && npm run build     # writes into backend/internal/web/dist
-cd ../backend && go build -o signify ./cmd/server
-./signify                                   # app, API and signaling on $PORT
+cd ../backend && go build -o ppt-remote ./cmd/server
+./ppt-remote                                # app, API and signaling on $PORT
 ```
 
 ## 🗂 Project structure
@@ -303,7 +303,7 @@ If the laser pointer doesn't feel right on a particular phone, record real senso
 
 ```bash
 node tools/analyze-recording.mjs <recording-id>            # fetches from the live site
-node tools/analyze-recording.mjs signify-gyro-....json     # or a downloaded file
+node tools/analyze-recording.mjs ppt-remote-gyro-....json     # or a downloaded file
 ```
 
 The report shows the sample rate, gyro bias and noise, holding angle, which sensor axis moved in each step, and whether the pointer moved the way the step asked (✓ / ✗ reversed / ✗ wrong axis).
@@ -375,6 +375,6 @@ If you change the gyro pointer, please attach a Pointer Lab recording (or its an
 
 ## ⭐ Star history
 
-If Signify got you through a presentation, a star helps other people find it.
+If ppt-remote got you through a presentation, a star helps other people find it.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Pranav-Conova/Signify&type=Date)](https://star-history.com/#Pranav-Conova/Signify&Date)

@@ -130,7 +130,7 @@ export default function Home() {
           .from(".art-wrap", { scale: 0, rotation: -120, duration: 1.4, ease: "elastic.out(1, 0.5)", stagger: 0.1 }, 0.45)
           .to(
             ".brace-text",
-            { duration: 1.2, scrambleText: { text: "{ Signify 2.0 }", chars: "01!<>-_/[]{}=+*^?#", speed: 0.6 } },
+            { duration: 1.2, scrambleText: { text: "{ ppt-remote }", chars: "01!<>-_/[]{}=+*^?#", speed: 0.6 } },
             0.3,
           );
 
@@ -291,7 +291,7 @@ export default function Home() {
 
       <header className="bh-top">
         <span className="wordmark">
-          Signify<span className="wordmark-dot" aria-hidden="true" />
+          ppt-remote<span className="wordmark-dot" aria-hidden="true" />
         </span>
         <nav className="bh-nav">
           <button className="pill-link hire" onClick={() => setAbout(true)}>
@@ -301,7 +301,7 @@ export default function Home() {
           <RouterLink className="pill-link nav-lab" to="/lab">
             <FlaskConical size={15} aria-hidden="true" /> Pointer Lab
           </RouterLink>
-          <a className="pill-link" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Signify on GitHub">
+          <a className="pill-link" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="ppt-remote on GitHub">
             <GitHubIcon />
           </a>
         </nav>
@@ -327,7 +327,7 @@ export default function Home() {
 
           <div className="t-start-copy">
             <span className="brace-tag">
-              <span className="brace-text">{"{ Signify 2.0 }"}</span>
+              <span className="brace-text">{"{ ppt-remote }"}</span>
             </span>
             <h1 className="art-title" id="start-title">
               <span className="title-line">Present with</span>

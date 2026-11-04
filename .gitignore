@@ -6,6 +6,7 @@ backend/internal/web/dist/*
 !backend/internal/web/dist/.gitkeep
 *.exe
 /signify
+/ppt-remote
 
 # Environment variables
 .env

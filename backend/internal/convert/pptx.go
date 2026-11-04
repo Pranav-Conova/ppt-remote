@@ -77,7 +77,7 @@ func (c *Converter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dir, err := os.MkdirTemp("", "signify-convert-")
+	dir, err := os.MkdirTemp("", "ppt-remote-convert-")
 	if err != nil {
 		http.Error(w, "server error", http.StatusInternalServerError)
 		return

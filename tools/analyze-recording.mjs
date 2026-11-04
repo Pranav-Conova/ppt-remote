@@ -3,12 +3,12 @@
 //
 // Usage:
 //   node tools/analyze-recording.mjs <recording-id> [base-url]
-//   node tools/analyze-recording.mjs path/to/signify-gyro-....json
+//   node tools/analyze-recording.mjs path/to/ppt-remote-gyro-....json
 //
-// base-url defaults to https://signify-4kql.onrender.com
+// base-url defaults to https://ppt-remote.onrender.com
 import { existsSync, readFileSync } from "node:fs";
 
-const [arg, base = "https://signify-4kql.onrender.com"] = process.argv.slice(2);
+const [arg, base = "https://ppt-remote.onrender.com"] = process.argv.slice(2);
 if (!arg) {
   console.error("usage: node tools/analyze-recording.mjs <recording-id | file.json> [base-url]");
   process.exit(1);
@@ -40,7 +40,7 @@ function window(series, t, start, end) {
   return out;
 }
 
-console.log(`\nSignify Pointer Lab recording · ${rec.createdAt}`);
+console.log(`\nppt-remote Pointer Lab recording · ${rec.createdAt}`);
 console.log(`Phone: ${rec.phoneModel || "(not given)"} · ${rec.device?.userAgent}`);
 console.log(`Hold style: ${rec.holdStyle} · screen orientation: ${rec.device?.orientation?.type} (${rec.device?.orientation?.angle}°)`);
 console.log(`Settings: ${JSON.stringify(rec.settings)}`);

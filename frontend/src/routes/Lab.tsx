@@ -171,7 +171,7 @@ export default function Lab() {
     const blob = new Blob([JSON.stringify(payload())], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `signify-gyro-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
+    a.download = `ppt-remote-gyro-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
@@ -255,7 +255,7 @@ export default function Lab() {
       <header className="lab-top">
         {/* In-app links: a full page load would end a paired phone session. */}
         <RouterLink className="wordmark" to="/">
-          Signify
+          ppt-remote
           <span className="wordmark-dot" aria-hidden="true" />
         </RouterLink>
         <RouterLink className="pill-link" to="/">

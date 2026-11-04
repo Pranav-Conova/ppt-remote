@@ -326,7 +326,7 @@ export default function Remote() {
         ) : (
           <p className="notice notice-wait" role="status">
             <LoaderCircle size={16} className="spin" aria-hidden="true" />
-            Waiting for your laptop… Keep Signify open there. This page connects by itself.
+            Waiting for your laptop… Keep ppt-remote open there. This page connects by itself.
           </p>
         ))}
 

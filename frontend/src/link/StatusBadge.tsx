@@ -11,7 +11,7 @@ export function StatusBadge({ status, waitingFor }: { status: LinkStatus | null;
     } else if (status.server === "offline") {
       tone = "bad";
       label = "Offline, retrying";
-      title = "Can't reach the Signify server. It keeps trying by itself.";
+      title = "Can't reach the ppt-remote server. It keeps trying by itself.";
     } else if (status.server === "connecting") {
       label = "Connecting…";
     } else if (status.transport === "p2p") {

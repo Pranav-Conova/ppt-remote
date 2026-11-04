@@ -1,4 +1,4 @@
-// Command server is the Signify backend: it serves the web app, pairs phones
+// Command server is the ppt-remote backend: it serves the web app, pairs phones
 // with presenters over QR codes, relays WebRTC signaling (and acts as a
 // fallback data relay), and converts PPTX to PDF.
 package main
@@ -52,7 +52,7 @@ func main() {
 	hub := session.NewHub(4*time.Hour, 10000)
 	conv := convert.New(os.Getenv("SOFFICE_PATH"), 1, 120*time.Second)
 	slog.Info("pptx conversion", "available", conv.Available())
-	recDir := env("RECORDINGS_DIR", filepath.Join(os.TempDir(), "signify-recordings"))
+	recDir := env("RECORDINGS_DIR", filepath.Join(os.TempDir(), "ppt-remote-recordings"))
 	recs, err := recordings.New(recDir, 500)
 	if err != nil {
 		slog.Error("recordings dir", "dir", recDir, "err", err)
