@@ -115,6 +115,20 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
+  // Fullscreen belongs to the presentation: leaving this page (Back, the
+  // browser's back button) drops it. Checked a tick later so React's
+  // dev-mode unmount/remount doesn't undo the fullscreen Start just asked for.
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      setTimeout(() => {
+        if (!mounted.current && document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+      }, 0);
+    };
+  }, []);
+
   const stageRef = useRef<HTMLDivElement>(null);
   const slideCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -429,7 +443,7 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
   const showControls = controlsVisible || phonePanel !== "closed" || help;
 
   return (
-    <div className="present" ref={stageRef} style={{ cursor: showControls ? "auto" : "none" }}>
+    <div className={`present${help || phonePanel !== "closed" ? " popup-open" : ""}`} ref={stageRef} style={{ cursor: showControls ? "auto" : "none" }}>
       <div className="slide-box" style={{ width: box.w, height: box.h }}>
         <canvas ref={slideCanvasRef} className="slide-canvas" />
         <canvas ref={drawCanvasRef} className="draw-canvas" />

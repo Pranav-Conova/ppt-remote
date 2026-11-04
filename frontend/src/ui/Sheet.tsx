@@ -5,6 +5,17 @@ import { FULL_MOTION, gsap } from "./gsap";
 const FOCUSABLE = "button, input, textarea, [href], [tabindex]:not([tabindex='-1'])";
 
 /**
+ * Zoom-blur entrance: while a sheet is open the page behind it shrinks a
+ * little (styles.css, html.popup-open), so the pop-up seems to come forward.
+ * The zoom is centred on what is on screen, not the top of a scrolled page.
+ */
+function zoomPage(on: boolean) {
+  const root = document.getElementById("root");
+  if (on && root) root.style.transformOrigin = `50% ${window.scrollY + window.innerHeight / 2}px`;
+  document.documentElement.classList.toggle("popup-open", on);
+}
+
+/**
  * Pop-up sheet over the home page. Esc, a click outside or `close()` from
  * the children closes it; focus stays inside while it is open and goes back
  * to the opener afterwards. `stagger` names the items that pop in one by one.
@@ -29,6 +40,7 @@ export function Sheet({
   const close = () => {
     if (closing.current) return;
     closing.current = true;
+    zoomPage(false); // the page zooms back while the sheet fades out
     if (!window.matchMedia(FULL_MOTION).matches) return onClose();
     gsap.to(backdrop.current, { opacity: 0, duration: 0.25 });
     gsap.to(panel.current, { y: 24, scale: 0.96, opacity: 0, filter: "blur(8px)", duration: 0.25, ease: "power2.in", onComplete: onClose });
@@ -36,6 +48,7 @@ export function Sheet({
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
+    zoomPage(true);
     panel.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
     if (window.matchMedia(FULL_MOTION).matches) {
       gsap.from(backdrop.current, { opacity: 0, duration: 0.3 });
@@ -61,6 +74,7 @@ export function Sheet({
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
+      zoomPage(false);
       opener?.focus();
     };
   }, []);
