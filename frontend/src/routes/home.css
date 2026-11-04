@@ -1395,7 +1395,6 @@ button.finger:active .finger-bar {
   /* A light tint so the blur behind every pop-up is clearly visible. */
   background: rgba(8, 9, 8, 0.45);
   backdrop-filter: blur(16px) saturate(0.9);
-  -webkit-backdrop-filter: blur(16px) saturate(0.9);
 }
 .sheet {
   --ink: #0e100f;
