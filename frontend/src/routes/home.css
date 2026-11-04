@@ -736,6 +736,43 @@ button.step-btn:hover {
 .t-pair .error {
   color: #c4122f;
 }
+/* "No app needed" bubble under the QR code, pointing up at it. Kept off the
+   code itself so it can never stop a scan. */
+.scan-tip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 260px;
+  margin: 0.2rem 0 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--cream);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: left;
+  box-shadow: 3px 3px 0 var(--c-green);
+}
+.scan-tip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  translate: -50% 0;
+  rotate: 45deg;
+  border-radius: 2px;
+}
+.scan-tip svg {
+  flex: none;
+  color: var(--c-green);
+}
+.scan-tip strong {
+  color: var(--c-green);
+}
 .t-pair .pair-copy {
   border-color: rgba(14, 16, 15, 0.3);
   background: transparent;

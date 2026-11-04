@@ -618,7 +618,10 @@ function PresentView({ deck }: { deck: LoadedDeck }) {
                   address or an HTTPS tunnel, or set PUBLIC_URL on the server.
                 </p>
               )}
-              <p className="muted small">Scan with your phone's camera. Use the same Wi-Fi for the lowest pointer lag.</p>
+              <p className="muted small">
+                <strong>No app needed.</strong> Scan with your phone&apos;s camera or any QR scanner. Use the same Wi-Fi
+                for the lowest pointer lag.
+              </p>
               <StatusBadge status={linkStatus} waitingFor="phone" />
               <details>
                 <summary className="muted small">Can't scan?</summary>

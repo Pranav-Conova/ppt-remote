@@ -2,7 +2,7 @@
 // keeps the code off the projected screen where anyone could scan it.
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Check, Copy, Smartphone } from "lucide-react";
+import { Camera, Check, Copy, Smartphone } from "lucide-react";
 import { ensureSession, usePresenterSession } from "../link/presenterSession";
 import { StatusBadge } from "../link/StatusBadge";
 
@@ -48,6 +48,15 @@ export function PairCard({ size = 168 }: { size?: number }) {
           <div className="pair-loading muted small">Creating pairing code…</div>
         )}
       </div>
+      {session.pairUrl && !paired && (
+        // People often think they need an app first; they don't.
+        <p className="scan-tip">
+          <Camera size={14} aria-hidden="true" />
+          <span>
+            <strong>No app needed.</strong> Scan with your phone&apos;s camera or any QR scanner.
+          </span>
+        </p>
+      )}
       <StatusBadge status={session.status} waitingFor="phone" />
       {session.unreachable && !paired && (
         <p className="error small">
