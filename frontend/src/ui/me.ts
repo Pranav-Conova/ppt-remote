@@ -42,8 +42,12 @@ export const WORK: { name: string; what: string; url?: string }[] = [
   { name: "TRIPMATIK", what: "Multi-tenant SaaS platform, co-built from scratch" },
 ];
 
-/** A ready-to-send email in the visitor's mail app. */
-export function enquiryMailto({ name, need, message }: { name: string; need: string; message: string }) {
+/**
+ * A ready-to-send enquiry. `mailto` needs a mail app set up as the default,
+ * which many people don't have (they use webmail), so Gmail and Outlook
+ * compose links are offered as well.
+ */
+export function enquiryLinks({ name, need, message }: { name: string; need: string; message: string }) {
   const subject = `Project enquiry: ${need} (via ppt-remote)`;
   const body = [
     `Hi ${ME.name.split(" ")[0]},`,
@@ -52,5 +56,12 @@ export function enquiryMailto({ name, need, message }: { name: string; need: str
     "",
     name.trim() ? `- ${name.trim()}` : "",
   ].join("\n");
-  return `mailto:${ME.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const to = encodeURIComponent(ME.email);
+  const su = encodeURIComponent(subject);
+  const b = encodeURIComponent(body);
+  return {
+    mailto: `mailto:${ME.email}?subject=${su}&body=${b}`,
+    gmail: `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${b}`,
+    outlook: `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${su}&body=${b}`,
+  };
 }

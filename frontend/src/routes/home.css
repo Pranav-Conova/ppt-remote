@@ -1991,6 +1991,36 @@ button.finger:active .finger-bar {
 .lead-note {
   color: var(--text-muted);
 }
+/* Shown after "Send enquiry": webmail links in case no mail app opened. */
+.lead-alt {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--ink);
+  font-weight: 600;
+}
+.lead-alt-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.lead-alt-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 38px;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--cream);
+  text-decoration: none;
+  transition: translate 0.2s var(--ease-spring);
+}
+.lead-alt-links a:hover {
+  translate: 0 -2px;
+}
 .lead-card .link-btn {
   display: inline-flex;
   align-items: center;

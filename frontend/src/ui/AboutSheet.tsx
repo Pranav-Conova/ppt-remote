@@ -3,7 +3,7 @@ import { ArrowUpRight, Check, Copy, Mail, MapPin, Send, X } from "lucide-react";
 import { confetti } from "./art";
 import { InstagramIcon, LinkedInIcon } from "./BrandIcons";
 import { GitHubIcon } from "./GitHubIcon";
-import { ME, SERVICES, WORK, enquiryMailto } from "./me";
+import { ME, SERVICES, WORK, enquiryLinks } from "./me";
 import { Sheet } from "./Sheet";
 
 /** Round LinkedIn / GitHub / Instagram / email buttons. */
@@ -42,10 +42,13 @@ export function AboutSheet({ onClose }: { onClose: () => void }) {
   const [sent, setSent] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Kept up to date so the webmail links carry what is typed now.
+  const links = enquiryLinks({ name, need, message });
+
   const send = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     confetti(e.currentTarget.querySelector(".lead-send"));
-    window.location.href = enquiryMailto({ name, need, message });
+    window.location.href = links.mailto;
     setSent(true);
   };
 
@@ -157,8 +160,24 @@ export function AboutSheet({ onClose }: { onClose: () => void }) {
               <button type="submit" className="lead-send">
                 <Send size={16} aria-hidden="true" /> Send enquiry
               </button>
-              <p className="small lead-note" aria-live="polite">
-                {sent ? "Your email app should open now with the message ready." : "Opens your email app, ready to send."}{" "}
+              {/* mailto does nothing without a default mail app, so offer webmail too. */}
+              <div aria-live="polite">
+                {sent && (
+                  <p className="small lead-alt">
+                    Nothing opened? Send it from your webmail instead:
+                    <span className="lead-alt-links">
+                      <a href={links.gmail} target="_blank" rel="noreferrer">
+                        Gmail <ArrowUpRight size={13} aria-hidden="true" />
+                      </a>
+                      <a href={links.outlook} target="_blank" rel="noreferrer">
+                        Outlook <ArrowUpRight size={13} aria-hidden="true" />
+                      </a>
+                    </span>
+                  </p>
+                )}
+              </div>
+              <p className="small lead-note">
+                {sent ? "Or copy the address and write yourself:" : "Opens your email app, ready to send."}{" "}
                 <button type="button" className="link-btn" onClick={copyEmail}>
                   {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{" "}
                   {copied ? "Copied" : ME.email}
