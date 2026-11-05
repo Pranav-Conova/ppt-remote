@@ -7,7 +7,6 @@ import "./styles.css";
 const Home = lazy(() => import("./routes/Home"));
 const Present = lazy(() => import("./routes/Present"));
 const Remote = lazy(() => import("./routes/Remote"));
-const Lab = lazy(() => import("./routes/Lab"));
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -17,7 +16,8 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/" element={<Home />} />
           <Route path="/present" element={<Present />} />
           <Route path="/r/:id" element={<Remote />} />
-          <Route path="/lab" element={<Lab />} />
+          {/* The Pointer Lab is a pop-up on the home page; /lab opens it there. */}
+          <Route path="/lab" element={<Home />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </Suspense>

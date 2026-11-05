@@ -1,43 +1,37 @@
 /* =============================================================================
-   Pointer Lab, in the home page's look: marquee strip, wordmark, sticker
-   titles, colour blocks and tiles with sticker shadows. The pieces come from
-   home.css; this file lays them out for a phone-sized single column.
+   Pointer Lab pop-up. The pieces (stickers, tiles, buttons, sheet frame) come
+   from home.css; this file lays them out in a phone-sized single column.
    ========================================================================== */
 
-.lab {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: var(--ink);
-  color: var(--cream);
+.sheet.lab-sheet {
+  width: min(640px, 100%);
+  box-shadow: 10px 10px 0 var(--c-green);
 }
-.lab .marquee {
+.lab-head {
+  align-items: center;
+  justify-content: flex-start;
+}
+.lab-head h2 {
+  flex: 1;
   margin: 0;
 }
-.lab-top {
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--line);
+.lab-head-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 14px;
+  background: var(--c-green);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--cream);
 }
-.lab-top .wordmark {
-  font-size: 1.45rem;
-  text-decoration: none;
-}
-.lab-main {
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
+.lab-body {
   display: grid;
   align-content: start;
   gap: 14px;
-  padding: 16px 18px max(28px, env(safe-area-inset-bottom));
 }
-.lab .tile {
+.lab-sheet .tile {
   padding: 1.15rem;
   gap: 0.8rem;
 }
@@ -130,7 +124,7 @@
   font-size: 1.05rem;
   font-weight: 600;
 }
-.lab .chip {
+.lab-sheet .chip {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -147,21 +141,21 @@
     color 0.2s,
     scale 0.25s var(--ease-spring);
 }
-.lab .chip:hover {
+.lab-sheet .chip:hover {
   border-color: var(--cream);
   scale: 1.04;
 }
-.lab .chip input {
+.lab-sheet .chip input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
-.lab .chip.on {
+.lab-sheet .chip.on {
   border-color: var(--c-green);
   background: var(--c-green);
   color: var(--ink);
 }
-.lab .chip:has(input:focus-visible) {
+.lab-sheet .chip:has(input:focus-visible) {
   outline: 2px solid var(--c-green);
   outline-offset: 2px;
 }
@@ -318,15 +312,15 @@
   font-size: clamp(1.4rem, 6vw, 1.9rem);
   letter-spacing: -0.03em;
 }
-.lab .field input,
-.lab .field textarea {
+.lab-sheet .field input,
+.lab-sheet .field textarea {
   background: var(--ink);
   border: 1.5px solid var(--line);
   border-radius: 12px;
   color: var(--cream);
 }
-.lab .field input:focus,
-.lab .field textarea:focus {
+.lab-sheet .field input:focus,
+.lab-sheet .field textarea:focus {
   border-color: var(--c-green);
   box-shadow: 3px 3px 0 var(--c-green);
 }

@@ -113,6 +113,10 @@
     background 0.2s,
     color 0.2s;
 }
+button.pill-link {
+  background: transparent;
+  cursor: pointer;
+}
 .pill-link:hover {
   background: var(--cream);
   color: var(--ink);

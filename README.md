@@ -280,7 +280,7 @@ Signify/
 │       └── web/                 embedded frontend build + SPA fallback
 ├── frontend/                    React + TypeScript (Vite)
 │   └── src/
-│       ├── routes/              Home, Present (laptop), Remote (phone), Lab
+│       ├── routes/              Home, Present (laptop), Remote (phone)
 │       ├── link/                WebRTC + relay transport, 8-byte pointer protocol
 │       ├── gesture/             MediaPipe worker, finger detection, gesture engine
 │       ├── remote/              gyro air-pointer, Pointer Lab recorder
@@ -296,7 +296,7 @@ Signify/
 
 If the laser pointer doesn't feel right on a particular phone, record real sensor data instead of guessing:
 
-1. On the phone, open `/lab` (or tap **⚙ → Pointer Lab** on the remote).
+1. On the phone, open `/lab` or tap **Pointer Lab** on the home page (or **⚙ → Pointer Lab** on the remote). It opens as a pop-up.
 2. Follow the guided moves (about 1 minute): hold still, turn right/left, tilt up/down, circle, quick flicks, free pointing.
 3. Tick what felt wrong, add a note, and tap **Upload**. You get a short recording ID. You can also download the raw JSON.
 4. Analyse it:

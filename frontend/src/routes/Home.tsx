@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Camera,
@@ -27,6 +27,7 @@ import { AboutSheet, SocialLinks } from "../ui/AboutSheet";
 import { Asterisk, Clover, InkShape, MORPH_SHAPES, Morpher, Ring, Squiggle, confetti } from "../ui/art";
 import { GitHubIcon } from "../ui/GitHubIcon";
 import { GestureSheet } from "../ui/GestureSheet";
+import { LabSheet } from "../ui/LabSheet";
 import { NoRemoteSheet } from "../ui/NoRemoteSheet";
 import { PairCard } from "../ui/PairCard";
 import { RemoteDemo } from "../ui/RemoteDemo";
@@ -90,6 +91,13 @@ export default function Home() {
   const [dragging, setDragging] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [about, setAbout] = useState(false);
+  // `/lab` (linked from the phone remote) opens the home page with the Pointer Lab up.
+  const location = useLocation();
+  const [lab, setLab] = useState(location.pathname === "/lab");
+  const closeLab = () => {
+    setLab(false);
+    if (location.pathname === "/lab") navigate("/", { replace: true });
+  };
   const [settings, setSettings] = useState<PresenterSettings>(loadSettings);
   // Start was pressed before a phone was paired: ask before going on.
   const [noRemote, setNoRemote] = useState(false);
@@ -297,10 +305,9 @@ export default function Home() {
           <button className="pill-link hire" onClick={() => setAbout(true)}>
             <span className="avail-dot" aria-hidden="true" /> Hire me
           </button>
-          {/* In-app navigation: a full page load would end the phone session. */}
-          <RouterLink className="pill-link nav-lab" to="/lab">
+          <button className="pill-link nav-lab" onClick={() => setLab(true)}>
             <FlaskConical size={15} aria-hidden="true" /> Pointer Lab
-          </RouterLink>
+          </button>
           <a className="pill-link" href={REPO_URL} target="_blank" rel="noreferrer" aria-label="ppt-remote on GitHub">
             <GitHubIcon />
           </a>
@@ -587,6 +594,7 @@ export default function Home() {
         <GestureSheet settings={settings} setSettings={setSettings} dupes={dupes} onClose={() => setSheet(false)} />
       )}
       {about && <AboutSheet onClose={() => setAbout(false)} />}
+      {lab && <LabSheet onClose={closeLab} />}
       {noRemote && (
         <NoRemoteSheet
           onPair={() => {
