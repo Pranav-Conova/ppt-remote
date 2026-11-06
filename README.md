@@ -17,13 +17,13 @@ Or scan a QR code and your phone becomes a **gyroscope laser pointer**. No app, 
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Hands-0097A7?logo=google&logoColor=white)](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker)
 [![Runs on your devices](https://img.shields.io/badge/video-never%20leaves%20your%20laptop-orange)](#%EF%B8%8F-how-it-works)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)](#-contributing)
-[![GitHub stars](https://img.shields.io/github/stars/Pranav-Conova/Signify?style=social)](https://github.com/Pranav-Conova/Signify/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/Pranav-Conova/ppt-remote?style=social)](https://github.com/Pranav-Conova/ppt-remote/stargazers)
 
 [**Live demo**](https://ppt-remote.onrender.com/) · [**Quick start**](#-quick-start) · [**What it does**](#-what-it-does) · [**Controls**](#-controls) · [**How it works**](#%EF%B8%8F-how-it-works) · [**Deploy**](#%EF%B8%8F-deploy) · [**Roadmap**](#%EF%B8%8F-roadmap) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
 
 <br>
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Pranav-Conova/Signify)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Pranav-Conova/ppt-remote)
 
 </div>
 
@@ -53,8 +53,8 @@ To run it yourself:
 **Prerequisites:** [Go 1.25+](https://go.dev/dl/) and [Node.js 22+](https://nodejs.org). [LibreOffice](https://www.libreoffice.org) is optional and only needed for PowerPoint files.
 
 ```bash
-git clone https://github.com/Pranav-Conova/Signify.git
-cd Signify
+git clone https://github.com/Pranav-Conova/ppt-remote.git
+cd ppt-remote
 
 # Terminal 1: Go server on :8080
 cd backend
@@ -270,7 +270,7 @@ cd ../backend && go build -o ppt-remote ./cmd/server
 ## 🗂 Project structure
 
 ```text
-Signify/
+ppt-remote/
 ├── backend/                     Go server (stdlib + coder/websocket)
 │   ├── cmd/server/              entry point, routes, config
 │   └── internal/
@@ -355,7 +355,7 @@ The server needs LibreOffice. The Docker image includes it. For local developmen
 - [ ] More gestures, and gestures recorded from your own hand
 - [ ] Multiple phones in one session (co-presenters)
 
-Have an idea? [Open an issue](https://github.com/Pranav-Conova/Signify/issues).
+Have an idea? [Open an issue](https://github.com/Pranav-Conova/ppt-remote/issues).
 
 ## 🤝 Contributing
 
@@ -377,4 +377,4 @@ If you change the gyro pointer, please attach a Pointer Lab recording (or its an
 
 If ppt-remote got you through a presentation, a star helps other people find it.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Pranav-Conova/Signify&type=Date)](https://star-history.com/#Pranav-Conova/Signify&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Pranav-Conova/ppt-remote&type=Date)](https://star-history.com/#Pranav-Conova/ppt-remote&Date)

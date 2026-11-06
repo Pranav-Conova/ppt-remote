@@ -38,7 +38,7 @@ import { ME } from "../ui/me";
 import { splashGone } from "../ui/splash";
 import "./home.css";
 
-const REPO_URL = "https://github.com/Pranav-Conova/Signify";
+const REPO_URL = "https://github.com/Pranav-Conova/ppt-remote";
 
 const CORNERS: [Corner, string][] = [
   ["tl", "Top left"],
