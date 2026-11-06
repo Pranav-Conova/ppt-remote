@@ -1,6 +1,7 @@
-import { StrictMode, Suspense, lazy } from "react";
+import { StrictMode, Suspense, lazy, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { hideSplash } from "./ui/splash";
 import "./styles.css";
 
 // Split per route so the phone remote loads without MediaPipe or pdf.js.
@@ -8,10 +9,20 @@ const Home = lazy(() => import("./routes/Home"));
 const Present = lazy(() => import("./routes/Present"));
 const Remote = lazy(() => import("./routes/Remote"));
 
+/** Shares the routes' Suspense boundary, so it mounts once the first route has rendered. */
+function SplashDone() {
+  useEffect(hideSplash, []);
+  return null;
+}
+
+// Never leave someone stuck behind the loading screen if a chunk fails to load.
+window.setTimeout(hideSplash, 10_000);
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Suspense fallback={null}>
+        <SplashDone />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/present" element={<Present />} />

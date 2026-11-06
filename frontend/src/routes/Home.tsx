@@ -35,6 +35,7 @@ import { Switch } from "../ui/Switch";
 import { Tile } from "../ui/Tile";
 import { FULL_MOTION, fullMotion, gsap, useGSAP } from "../ui/gsap";
 import { ME } from "../ui/me";
+import { splashGone } from "../ui/splash";
 import "./home.css";
 
 const REPO_URL = "https://github.com/Pranav-Conova/Signify";
@@ -120,8 +121,9 @@ export default function Home() {
     (_, contextSafe) => {
       gsap.matchMedia().add(FULL_MOTION, () => {
         // Entrance: tiles wipe up, stickers slap on, shapes spring in.
-        gsap
-          .timeline({ defaults: { ease: "expo.out" } })
+        // Held until the loading screen starts fading so it plays in view.
+        const entrance = gsap
+          .timeline({ paused: true, defaults: { ease: "expo.out" } })
           .from(".tile", {
             clipPath: "inset(100% 0% 0% 0% round 22px)",
             y: 40,
@@ -141,6 +143,10 @@ export default function Home() {
             { duration: 1.2, scrambleText: { text: "{ ppt-remote }", chars: "01!<>-_/[]{}=+*^?#", speed: 0.6 } },
             0.3,
           );
+        let alive = true;
+        splashGone.then(() => {
+          if (alive) entrance.play();
+        });
 
         // Always moving.
         gsap.to(".clover", { rotation: 360, duration: 16, repeat: -1, ease: "none" });
@@ -174,7 +180,10 @@ export default function Home() {
           });
         });
         hero?.addEventListener("pointermove", onMove);
-        return () => hero?.removeEventListener("pointermove", onMove);
+        return () => {
+          alive = false;
+          hero?.removeEventListener("pointermove", onMove);
+        };
       });
     },
     { scope: root },
