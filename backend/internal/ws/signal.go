@@ -10,7 +10,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/Pranav-Conova/Signify/backend/internal/session"
+	"github.com/Pranav-Conova/ppt-remote/backend/internal/session"
 )
 
 const (

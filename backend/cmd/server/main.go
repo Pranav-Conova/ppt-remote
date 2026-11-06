@@ -16,11 +16,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Pranav-Conova/Signify/backend/internal/convert"
-	"github.com/Pranav-Conova/Signify/backend/internal/recordings"
-	"github.com/Pranav-Conova/Signify/backend/internal/session"
-	"github.com/Pranav-Conova/Signify/backend/internal/web"
-	"github.com/Pranav-Conova/Signify/backend/internal/ws"
+	"github.com/Pranav-Conova/ppt-remote/backend/internal/convert"
+	"github.com/Pranav-Conova/ppt-remote/backend/internal/recordings"
+	"github.com/Pranav-Conova/ppt-remote/backend/internal/session"
+	"github.com/Pranav-Conova/ppt-remote/backend/internal/web"
+	"github.com/Pranav-Conova/ppt-remote/backend/internal/ws"
 )
 
 const defaultICEServers = `[{"urls":["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"]}]`

@@ -1,4 +1,4 @@
-module github.com/Pranav-Conova/Signify/backend
+module github.com/Pranav-Conova/ppt-remote/backend
 
 go 1.25.7
 

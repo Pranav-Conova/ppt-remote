@@ -11,7 +11,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/Pranav-Conova/Signify/backend/internal/session"
+	"github.com/Pranav-Conova/ppt-remote/backend/internal/session"
 )
 
 func dial(t *testing.T, ctx context.Context, srv *httptest.Server, c session.Credentials, role session.Role, token string) *websocket.Conn {
