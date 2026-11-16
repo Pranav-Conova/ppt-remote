@@ -47,6 +47,10 @@ func Handler() http.Handler {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
+		// Pairing links and the presenter view are per-session, so keep them out of search results.
+		if strings.HasPrefix(name, "r/") || name == "present" {
+			w.Header().Set("X-Robots-Tag", "noindex, nofollow")
+		}
 		w.Write(index)
 	})
 }
