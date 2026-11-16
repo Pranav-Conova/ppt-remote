@@ -1,0 +1,27 @@
+# ppt-remote
+
+> Free presentation remote that runs in the browser. Open a PDF or PowerPoint deck, then change slides, point and draw with hand gestures in front of your webcam, or scan a QR code to turn your phone into a clicker and gyroscope laser pointer. No app, no clicker, no install. Live at https://ppt-remote.onrender.com/ (formerly Signify 2.0).
+
+Key facts:
+
+- Use it: open https://ppt-remote.onrender.com/ on the laptop, drop in a deck, scan the QR code with a phone, press Present. Press `F` for fullscreen.
+- Phone remote: Next, Prev, Pointer (hold and aim the phone; drag down to draw), Undo, Clear, Blank, plus settings for sensitivity, acceleration, smoothing, drift correction and axis inversion.
+- Laser pointer: driven by the phone's gyroscope; visible in the room and on screen-shared video calls. Needs HTTPS.
+- Hand gestures (defaults, customisable): pinky up = next slide, thumb up = previous, index = point, thumb + index = draw, index + middle + ring = undo, index + middle + pinky = show text. Tracked with MediaPipe Hand Landmarker in a Web Worker.
+- Files: PDFs render in the browser with pdf.js and are never uploaded. PPT, PPTX and ODP are converted to PDF on the server with headless LibreOffice; animations are flattened.
+- Latency: after QR pairing the phone talks to the laptop directly over Wi-Fi with WebRTC DataChannels (8-byte pointer frames, ~2–10 ms); falls back to a server relay on isolated networks.
+- Privacy: webcam video never leaves the laptop.
+- Keyboard: → / Space / PgDn next, ← / PgUp previous, B blank, T text, Z undo, C clear, F fullscreen, P pairing QR.
+- Stack: Go server (pairing, WebRTC signaling, relay, PPTX conversion) and React + TypeScript frontend (Vite). Self-host with Docker or the included Render Blueprint.
+- Free tier note: the hosted site can take 30–50 s to wake up after being idle.
+
+## Docs
+
+- [README](https://github.com/Pranav-Conova/ppt-remote/blob/main/README.md): features, controls, how it works, deploy, troubleshooting, FAQ
+- [Source code](https://github.com/Pranav-Conova/ppt-remote)
+- [Configuration](https://github.com/Pranav-Conova/ppt-remote/blob/main/.env.example): environment variables
+
+## Optional
+
+- [Video demo (v1)](https://youtu.be/TeOxVTLrOes)
+- [Original Django + OpenCV version (v1 branch)](https://github.com/Pranav-Conova/ppt-remote/tree/v1)

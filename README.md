@@ -19,13 +19,29 @@ Or scan a QR code and your phone becomes a **gyroscope laser pointer**. No app, 
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)](#-contributing)
 [![GitHub stars](https://img.shields.io/github/stars/Pranav-Conova/ppt-remote?style=social)](https://github.com/Pranav-Conova/ppt-remote/stargazers)
 
-[**Live demo**](https://ppt-remote.onrender.com/) · [**Quick start**](#-quick-start) · [**What it does**](#-what-it-does) · [**Controls**](#-controls) · [**How it works**](#%EF%B8%8F-how-it-works) · [**Deploy**](#%EF%B8%8F-deploy) · [**Roadmap**](#%EF%B8%8F-roadmap) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
+[**Live demo**](https://ppt-remote.onrender.com/) · [**Quick start**](#-quick-start) · [**What it does**](#-what-it-does) · [**Controls**](#-controls) · [**How it works**](#%EF%B8%8F-how-it-works) · [**Deploy**](#%EF%B8%8F-deploy) · [**FAQ**](#-faq) · [**Roadmap**](#%EF%B8%8F-roadmap) · [**Demo (v1)**](https://youtu.be/TeOxVTLrOes)
 
 <br>
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Pranav-Conova/ppt-remote)
 
 </div>
+
+---
+
+## 📖 What is ppt-remote?
+
+**ppt-remote** is a free presentation remote that runs entirely in the browser. You open a PDF or PowerPoint deck at [ppt-remote.onrender.com](https://ppt-remote.onrender.com/) and control it in two ways: **hand gestures** in front of your laptop's webcam (next, previous, point, draw, undo), or your **phone as a clicker and gyroscope laser pointer**, paired by scanning a QR code. There is no app to install, PDFs and webcam video never leave your device, and after pairing the phone talks to the laptop directly over Wi-Fi with WebRTC.
+
+| | |
+|---|---|
+| **What it is** | A web app: presentation remote, phone laser pointer and gesture slide controller |
+| **Live site** | [ppt-remote.onrender.com](https://ppt-remote.onrender.com/) (free) |
+| **Works with** | PDF, PPT, PPTX, ODP |
+| **Needs** | A laptop browser; a webcam for gestures; any phone with a browser for the remote (gyroscope for the laser pointer) |
+| **Install** | None. Self-host with Docker, a single Go binary or the Render Blueprint |
+| **Built with** | Go, React, TypeScript, WebRTC, MediaPipe, pdf.js, LibreOffice |
+| **Formerly** | Signify 2.0 (published in IRJMETS as Signify) |
 
 ---
 
@@ -367,6 +383,40 @@ cd frontend && npm test        # pointer protocol, gyro pointer, finger + gestur
 ```
 
 If you change the gyro pointer, please attach a Pointer Lab recording (or its analysis) from before and after in your pull request.
+
+## ❓ FAQ
+
+### Can I use my phone as a presentation clicker without installing an app?
+
+Yes. Open [ppt-remote.onrender.com](https://ppt-remote.onrender.com/) on your laptop, add your slides and scan the QR code with your phone's camera. The phone becomes a clicker in its browser, with **Next**, **Prev**, **Pointer**, **Undo**, **Clear** and **Blank** buttons and a live slide counter.
+
+### Can I use my phone as a laser pointer for presentations?
+
+Yes. Hold **Pointer** on the phone and aim it at the screen. The phone's gyroscope moves a red laser dot on the slides, and because the dot is drawn on the slides themselves, people on a Zoom, Teams or Meet screen share see it too. Drag down while holding to draw.
+
+### How do I control PowerPoint or PDF slides with hand gestures?
+
+Open your deck in ppt-remote, allow webcam access and raise your hand. By default a raised **pinky** goes to the next slide, a **thumb** goes back, an **index finger** points and **thumb + index** draws. Hand tracking runs in your browser with MediaPipe, and you can change every gesture on the home page.
+
+### Does it work with PowerPoint (PPTX) files?
+
+Yes. PPT, PPTX and ODP files are converted to PDF on the server with LibreOffice. Animations and transitions are flattened to static pages, so for the best result export your slides to PDF first.
+
+### Is it free? Is my data private?
+
+The hosted site is free. PDFs are rendered in your browser and never uploaded, webcam video never leaves your laptop, and after pairing the phone and laptop talk directly over Wi-Fi. Only PowerPoint files are sent to the server, to be converted.
+
+### Do the phone and laptop need to be on the same Wi-Fi?
+
+For the lowest lag (about 2–10 ms), yes: on the same network they connect directly. On different or isolated networks it falls back to a server relay automatically. It still works, with more pointer lag. A phone hotspot or a TURN server fixes strict networks.
+
+### Does it work on iPhone and Android?
+
+Yes, in the phone's browser. The laser pointer needs HTTPS and a gyroscope; on iPhone, tap the banner and choose **Allow** for motion access. Without a gyroscope, drag on the Pointer pad like a touchpad.
+
+### Why is the site slow to open the first time?
+
+It runs on Render's free tier, which sleeps when idle. The first visit after a quiet spell takes 30–50 s; open it a minute before you present.
 
 ## 🧰 Built with
 
