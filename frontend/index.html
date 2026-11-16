@@ -4,7 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0e100f" />
-    <meta name="description" content="Control your slides with hand gestures, or turn your phone into a clicker and laser pointer." />
+    <meta name="description" content="Free presentation remote in the browser: control PDF and PowerPoint slides with hand gestures on your webcam, or scan a QR code to turn your phone into a clicker and gyroscope laser pointer. No app, no install." />
+    <meta name="keywords" content="presentation remote, phone as presentation clicker, phone laser pointer, gyroscope laser pointer, hand gesture slide control, control slides with hand gestures, webcam gesture presentation, PowerPoint remote, PDF presenter, online clicker, free presentation clicker, no app, WebRTC, MediaPipe" />
+    <meta name="author" content="Pranav T" />
+    <meta name="google-site-verification" content="Uo0tw2-vKPUzF_ECrxepQm3UZyUtchlLytWt04dA6m8" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://ppt-remote.onrender.com/" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
 
     <!-- Tab and home-screen icons. Re-render the PNGs with tools/brand/render.sh. -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -14,7 +21,7 @@
     <!-- Link previews (WhatsApp, Slack, X, LinkedIn…). Crawlers need absolute URLs. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ppt-remote" />
-    <meta property="og:title" content="ppt-remote · present with your phone as a laser" />
+    <meta property="og:title" content="ppt-remote: control slides with hand gestures or your phone as a laser pointer" />
     <meta property="og:description" content="Control your slides with hand gestures, or turn your phone into a clicker and laser pointer. Nothing to install." />
     <meta property="og:url" content="https://ppt-remote.onrender.com/" />
     <meta property="og:image" content="https://ppt-remote.onrender.com/og-image.png" />
@@ -23,13 +30,88 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="ppt-remote: present with your phone as a laser pointer" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="ppt-remote · present with your phone as a laser" />
+    <meta name="twitter:title" content="ppt-remote: control slides with hand gestures or your phone as a laser pointer" />
     <meta name="twitter:description" content="Control your slides with hand gestures, or turn your phone into a clicker and laser pointer." />
     <meta name="twitter:image" content="https://ppt-remote.onrender.com/og-image.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-    <title>ppt-remote</title>
+    <title>ppt-remote: Free Phone Presentation Remote, Laser Pointer &amp; Hand-Gesture Slide Control</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://ppt-remote.onrender.com/#app",
+            "name": "ppt-remote",
+            "alternateName": "Signify 2.0",
+            "url": "https://ppt-remote.onrender.com/",
+            "description": "Free presentation remote that runs in the browser. Control PDF and PowerPoint slides with hand gestures on your webcam, or scan a QR code to turn your phone into a clicker and gyroscope laser pointer that shows up in the room and on video calls.",
+            "applicationCategory": "BusinessApplication",
+            "applicationSubCategory": "Presentation software",
+            "operatingSystem": "Any (web browser)",
+            "browserRequirements": "A modern browser with WebRTC. Webcam for gestures; phone with a gyroscope for the laser pointer.",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "image": "https://ppt-remote.onrender.com/og-image.png",
+            "screenshot": "https://ppt-remote.onrender.com/og-image.png",
+            "author": { "@id": "https://ppt-remote.onrender.com/#author" },
+            "sameAs": ["https://github.com/Pranav-Conova/ppt-remote"],
+            "featureList": [
+              "Control slides with hand gestures on a webcam (MediaPipe, runs in the browser)",
+              "Phone as a presentation clicker, paired with a QR code",
+              "Gyroscope laser pointer from your phone",
+              "Draw and annotate on slides",
+              "PDF and PowerPoint (PPT, PPTX, ODP) support",
+              "Direct, low-latency WebRTC link over Wi-Fi",
+              "Camera picture-in-picture overlay",
+              "Full keyboard control",
+              "No app or install; PDFs and webcam video never leave your device"
+            ]
+          },
+          {
+            "@type": "Person",
+            "@id": "https://ppt-remote.onrender.com/#author",
+            "name": "Pranav T",
+            "url": "https://github.com/Pranav-Conova",
+            "sameAs": ["https://github.com/Pranav-Conova", "https://www.linkedin.com/in/me-pranav"]
+          },
+          {
+            "@type": "SoftwareSourceCode",
+            "name": "ppt-remote",
+            "codeRepository": "https://github.com/Pranav-Conova/ppt-remote",
+            "programmingLanguage": ["Go", "TypeScript"],
+            "author": { "@id": "https://ppt-remote.onrender.com/#author" },
+            "targetProduct": { "@id": "https://ppt-remote.onrender.com/#app" }
+          },
+          {
+            "@type": "HowTo",
+            "name": "How to use your phone as a presentation remote and laser pointer",
+            "totalTime": "PT1M",
+            "tool": [{ "@type": "HowToTool", "name": "Laptop with a browser" }, { "@type": "HowToTool", "name": "Phone with a camera" }],
+            "step": [
+              { "@type": "HowToStep", "name": "Open ppt-remote", "text": "Open ppt-remote.onrender.com on the laptop you present from." },
+              { "@type": "HowToStep", "name": "Add your deck", "text": "Drop in a PDF or PowerPoint file. PDFs are rendered in your browser and never uploaded." },
+              { "@type": "HowToStep", "name": "Pair your phone", "text": "Scan the QR code on the home page with your phone's camera. No app is needed." },
+              { "@type": "HowToStep", "name": "Present", "text": "Press Present. Tap Next and Prev on the phone, or hold Pointer and aim the phone at the screen to move a laser dot." }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              { "@type": "Question", "name": "Can I use my phone as a presentation clicker without an app?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Open ppt-remote.onrender.com on your laptop, add your slides and scan the QR code with your phone. The phone becomes a clicker in its browser, with Next, Prev, Pointer, Undo, Clear and Blank buttons. Nothing is installed." } },
+              { "@type": "Question", "name": "Can my phone work as a laser pointer?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Hold the Pointer button and aim your phone at the screen. ppt-remote uses the phone's gyroscope to move a red dot on the slides, which everyone in the room and on a video call can see. Drag down while holding to draw." } },
+              { "@type": "Question", "name": "How do I control slides with hand gestures?", "acceptedAnswer": { "@type": "Answer", "text": "Allow webcam access in ppt-remote and raise your hand. By default, a raised pinky goes to the next slide, a thumb goes back, an index finger points and thumb plus index draws. Hand tracking runs in your browser with MediaPipe, and every gesture can be customised." } },
+              { "@type": "Question", "name": "Does ppt-remote work with PowerPoint files?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. PPT, PPTX and ODP files are converted to PDF on the server with LibreOffice. PDFs are rendered directly in your browser. Animations and transitions are flattened to static pages." } },
+              { "@type": "Question", "name": "Is ppt-remote free and private?", "acceptedAnswer": { "@type": "Answer", "text": "It is free, and its source code is on GitHub. PDFs are never uploaded, webcam video never leaves your laptop, and after pairing the phone talks to the laptop directly over Wi-Fi with WebRTC." } },
+              { "@type": "Question", "name": "Does the phone need to be on the same Wi-Fi as the laptop?", "acceptedAnswer": { "@type": "Answer", "text": "For the lowest lag, yes: on the same Wi-Fi the phone connects directly to the laptop. On different or isolated networks it falls back to a server relay automatically, which still works with a bit more pointer lag." } }
+            ]
+          }
+        ]
+      }
+    </script>
+    <noscript><style>#splash { display: none; }</style></noscript>
     <style>
       /* Loading screen. Inline so it paints before any JS or CSS bundle loads;
          src/ui/splash.ts fades it out once the first route has rendered.
@@ -121,7 +203,40 @@
         <div class="splash-bar"></div>
       </div>
     </div>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static content for search engines, AI crawlers and no-JS visitors.
+           React replaces it as soon as the app mounts. Keep it in sync with the README. -->
+      <main style="max-width: 760px; margin: 0 auto; padding: 32px 16px; font-family: system-ui, sans-serif; color: #fffce1; line-height: 1.6">
+        <h1>ppt-remote: present with your phone as a laser pointer, or with hand gestures</h1>
+        <p>ppt-remote is a free presentation remote that runs in your browser. Open a PDF or PowerPoint deck, then change slides, point and draw with hand gestures in front of your webcam, or scan a QR code to turn your phone into a clicker and gyroscope laser pointer. No app, no clicker, no install.</p>
+        <h2>Features</h2>
+        <ul>
+          <li><strong>Phone remote:</strong> pair with a QR code; Next, Prev, Pointer, Undo, Clear and Blank buttons with a live slide counter.</li>
+          <li><strong>Gyro laser pointer:</strong> hold Pointer and aim the phone at the screen; drag down to draw. Visible in the room and on video calls.</li>
+          <li><strong>Hand gestures:</strong> six customisable gestures (next, previous, point, draw, undo, show text) tracked with MediaPipe in the browser.</li>
+          <li><strong>PDF and PowerPoint:</strong> PDFs render locally with pdf.js and are never uploaded; PPT, PPTX and ODP are converted with LibreOffice.</li>
+          <li><strong>Low latency:</strong> a direct WebRTC link over Wi-Fi, with automatic fallback to a server relay.</li>
+          <li><strong>Private:</strong> webcam video never leaves your laptop.</li>
+        </ul>
+        <h2>How to use your phone as a presentation remote</h2>
+        <ol>
+          <li>Open ppt-remote.onrender.com on your laptop.</li>
+          <li>Drop in a PDF or PowerPoint file.</li>
+          <li>Scan the QR code with your phone.</li>
+          <li>Press Present, then use the phone to change slides and point.</li>
+        </ol>
+        <h2>Frequently asked questions</h2>
+        <h3>Can I use my phone as a presentation clicker without an app?</h3>
+        <p>Yes. The phone works as a clicker in its browser after you scan the QR code. Nothing is installed.</p>
+        <h3>Can my phone work as a laser pointer?</h3>
+        <p>Yes. Hold Pointer and aim the phone; its gyroscope moves a red dot on the slides that everyone, including people on a video call, can see.</p>
+        <h3>How do I control slides with hand gestures?</h3>
+        <p>Allow webcam access and raise your hand: a raised pinky goes forward, a thumb goes back, an index finger points and thumb plus index draws.</p>
+        <h3>Does it work with PowerPoint?</h3>
+        <p>Yes. PPT, PPTX and ODP files are converted to PDF; animations are flattened to static pages.</p>
+        <p>Source code on <a href="https://github.com/Pranav-Conova/ppt-remote" style="color: #0ae448">GitHub</a>. Made by Pranav T.</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
