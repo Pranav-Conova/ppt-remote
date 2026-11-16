@@ -1,0 +1,14 @@
+{
+  "name": "ppt-remote: phone presentation remote and laser pointer",
+  "short_name": "ppt-remote",
+  "description": "Control slides with hand gestures, or turn your phone into a clicker and laser pointer.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e100f",
+  "theme_color": "#0e100f",
+  "icons": [
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

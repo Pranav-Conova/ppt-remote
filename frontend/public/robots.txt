@@ -1,0 +1,39 @@
+# ppt-remote: https://ppt-remote.onrender.com/
+User-agent: *
+Allow: /
+# Live sessions, the presenter view and APIs are private and change every time.
+Disallow: /r/
+Disallow: /present
+Disallow: /api/
+Disallow: /ws/
+
+# AI search and answer engines are welcome to read and cite the site.
+User-agent: GPTBot
+Allow: /
+Disallow: /r/
+Disallow: /present
+Disallow: /api/
+Disallow: /ws/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /r/
+Disallow: /present
+Disallow: /api/
+Disallow: /ws/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /r/
+Disallow: /present
+Disallow: /api/
+Disallow: /ws/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /r/
+Disallow: /present
+Disallow: /api/
+Disallow: /ws/
+
+Sitemap: https://ppt-remote.onrender.com/sitemap.xml
